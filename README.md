@@ -113,7 +113,7 @@ Vite 会提示 Plotly 绘图模块大于 500 kB；它已从首屏主包分离并
 
 ## Cloudflare Pages 部署
 
-项目为静态网站，本项目采用 Pages 的 Git 集成自动构建。首次公开发布需项目所有者确认，目前尚未发布；实际仓库和网站地址在完成部署后记录到 [部署说明](docs/DEPLOYMENT.md)。Git 集成配置：
+项目为静态网站，计划采用 Pages 的 Git 集成自动构建。源代码已发布到 [GitHub 仓库](https://github.com/13914491579/powerplot-studio)，Cloudflare 网站尚未发布；实际部署状态记录在 [部署说明](docs/DEPLOYMENT.md)。Git 集成配置：
 
 - 构建命令：`pnpm build`
 - 输出目录：`dist`

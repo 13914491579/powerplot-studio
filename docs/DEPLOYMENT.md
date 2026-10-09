@@ -2,13 +2,13 @@
 
 ## 当前状态（2026-10-09）
 
-- 本地项目已初始化 Git，发布分支为 `main`，暂无远程仓库、提交或推送。
-- GitHub 连接器识别账号 `13914491579`；查询同名仓库返回 404，可访问仓库列表为空。私有仓库若未授予连接器访问权限，仍需在浏览器核对。
-- 实际 GitHub 仓库地址：尚未创建或确认。
+- 本地项目已初始化 Git，发布分支为 `main`，已推送并关联 `origin/main`；首个提交为 `7281510c504ab91eebffdf7722d589337de3ba4e`。
+- GitHub 账号 `13914491579` 的公开仓库已创建；未添加项目许可证。
+- 实际 GitHub 仓库地址：https://github.com/13914491579/powerplot-studio
 - 实际 Pages 网站地址：尚未创建或发布。
-- 所有者已确认使用上述账号创建公开仓库及首次公开发布。GitHub 浏览器跳转到登录页；当前浏览器控制超时，远程创建和发布尚未执行，需要先完成登录。Cloudflare GitHub App 的具体授权页面仍需用户核对并完成。
+- 所有者已确认创建公开仓库及首次公开发布，并完成 Git 推送所需登录。Cloudflare 已进入 Pages Git 集成；GitHub App 安装页已限定为仅 `powerplot-studio`，等待用户点击 Install & Authorize 完成具体权限授权。Pages 项目尚未创建，公网验收未执行。
 - 已保留全部第二阶段绘图逻辑；无项目许可证新增。
-- 部署准备修改后执行 `pnpm.cmd check`：33 项单元测试、9 项 Edge 浏览器测试和生产构建全部通过。`git diff --cached --check` 通过；忽略规则验证通过，公开候选文件的常见凭据与个人绝对路径扫描未发现匹配。GitHub Ubuntu CI 尚未实际运行，公网验收等待真实部署地址。
+- 部署准备修改后执行 `pnpm.cmd check`：33 项单元测试、9 项 Edge 浏览器测试和生产构建全部通过。`git diff --cached --check` 通过；忽略规则验证通过，公开候选文件的常见凭据与个人绝对路径扫描未发现匹配。首个提交的 GitHub Ubuntu/Chromium CI 已全部成功：[运行结果](https://github.com/13914491579/powerplot-studio/actions/runs/37894096423)。
 
 ## 首次发布操作
 
