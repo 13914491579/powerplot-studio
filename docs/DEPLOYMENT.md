@@ -1,0 +1,65 @@
+# GitHub 与 Cloudflare Pages 部署
+
+## 当前状态（2026-10-09）
+
+- 本地项目已初始化 Git，发布分支为 `main`，暂无远程仓库、提交或推送。
+- GitHub 连接器识别账号 `13914491579`；查询同名仓库返回 404，可访问仓库列表为空。私有仓库若未授予连接器访问权限，仍需在浏览器核对。
+- 实际 GitHub 仓库地址：尚未创建或确认。
+- 实际 Pages 网站地址：尚未创建或发布。
+- 所有者已确认使用上述账号创建公开仓库及首次公开发布。GitHub 浏览器跳转到登录页；当前浏览器控制超时，远程创建和发布尚未执行，需要先完成登录。Cloudflare GitHub App 的具体授权页面仍需用户核对并完成。
+- 已保留全部第二阶段绘图逻辑；无项目许可证新增。
+- 部署准备修改后执行 `pnpm.cmd check`：33 项单元测试、9 项 Edge 浏览器测试和生产构建全部通过。`git diff --cached --check` 通过；忽略规则验证通过，公开候选文件的常见凭据与个人绝对路径扫描未发现匹配。GitHub Ubuntu CI 尚未实际运行，公网验收等待真实部署地址。
+
+## 首次发布操作
+
+1. 确认使用账号 `13914491579` 创建公开仓库 `powerplot-studio` 并首次公开发布。登录 GitHub 后再次核对同名仓库；已有仓库先复用并检查历史。新建空仓库，不自动添加 README、LICENSE 或 `.gitignore`，避免重复初始化历史。
+2. 在本地检查 `git status` 和 `git diff --cached`，配置本人 Git 提交身份，提交项目。将 `origin` 设置为 GitHub 页面给出的实际克隆地址，再执行 `git push -u origin main`。禁止强制推送；已有历史应先拉取并整合。
+3. 登录 Cloudflare Dashboard，在 Workers & Pages 中创建 **Pages** 项目并选择连接 Git（不同控制台版本入口文字可能不同）。连接 GitHub；只给 Cloudflare GitHub App 授权所需仓库。账号密码、API Token 均不通过聊天发送。
+4. 选择已确认的仓库，核对下面的配置，确认后点击保存和部署。不要选择 Workers 部署或 Direct Upload；本任务需要 Pages Git 集成。
+
+| 设置 | 值 |
+| --- | --- |
+| 项目名称 | `powerplot-studio`（名称是否可用以控制台为准） |
+| Framework preset | Vite（若列表无此项，手动填写同样的构建设置） |
+| Production branch | `main` |
+| Build command | `pnpm build` |
+| Build output directory | `dist` |
+| Root directory | 留空，使用仓库根目录 |
+| Build environment | v3 |
+| NODE_VERSION | `24.19.0` |
+| PNPM_VERSION | `11.25.0` |
+| Preview branches | 全部非正式分支 |
+
+版本变量需同时用于 Production 与 Preview。提交现有 `pnpm-lock.yaml`，不生成其他包管理器锁文件。Cloudflare 自动依赖安装需使用该锁文件；首次构建必须核对日志中的 Node、pnpm 版本及安装结果。若日志不能确认冻结锁文件，可设置 `SKIP_DEPENDENCY_INSTALL=1` 并将构建命令改为 `pnpm install --frozen-lockfile && pnpm build`；这是明确锁文件策略的备用配置，需要在控制台实际验证。
+
+## 自动检查、预览与回退
+
+`.github/workflows/ci.yml` 在推送、PR 和手动触发时运行：固定 Node/pnpm、冻结锁文件安装、Vitest、生产构建、Chromium 工作流验收。失败诊断上传为短期 artifact；不会上传真实用户导入数据。
+
+Cloudflare Git 集成负责部署：推送 `main` 构建正式版本，其他分支生成预览。两套流程独立；Pages 的 `pnpm build` 失败不会产生可替换正式站点的成功部署，但 GitHub 测试失败不能自动阻止 Pages 构建。建议设置 GitHub `main` 分支规则：要求 PR 与 `check` 成功，禁止强制推送，验收预览后合并。
+
+发生问题时在 Pages 的 Deployments 选择之前成功的正式部署执行 Rollback；预览部署不是正式回退目标。随后用 `git revert` 提交修复以保持代码与网站一致，避免下一次推送恢复问题。尚未创建远程项目，所以自动触发、失败保留与回退目前仅完成配置准备，未实测。
+
+## 上线验收
+
+部署成功后记录控制台给出的实际 HTTPS 地址和对应 commit SHA。不能根据建议项目名猜测网址。
+
+在项目根目录使用 PowerShell：
+
+```powershell
+$env:PLAYWRIGHT_BASE_URL = '此处填写实际 HTTPS 地址'
+pnpm.cmd test:e2e
+Remove-Item Env:PLAYWRIGHT_BASE_URL
+```
+
+这套测试对公网地址验证：真实 TXT 原始数组及时间范围、三列 CSV、非等间隔、尖峰、多文件分别/合并、轴范围和刻度、IEEE 单双栏、双三子图、颜色线型线宽、PNG/SVG/PDF 与 ZIP、样式同步、运行时错误。Windows 使用已安装的 Edge；其他系统先安装 Playwright Chromium。
+
+另外人工核对：无登录情况下打开首页，刷新后仍可访问；DevTools Console 无严重错误；Network 中导入本地文件不会触发上传请求；示例与字体从网站同源加载。推送开发分支检查预览地址，再将验证过的变更合并到 main，核对正式部署 commit 和 Pages/GitHub 状态。
+
+## 公开文件审查与限制
+
+`.gitignore` 排除依赖、构建、测试截图/导出产物、环境文件、常见密钥文件和本地 Cloudflare 状态。没有运行时凭据；代码仅 fetch 同源示例、字体和内存 data URL，原始输入由 File API / Worker 在浏览器解析。示例仿真数据经所有者允许公开。
+
+字体保留 SIL OFL 文件。Times 系列 SVG 可能依赖接收设备字体；PDF 中文使用 Noto 字体替代，相关限制见 README。百万点性能优化仍属后续阶段。公开仓库的源代码会被他人读取，许可证尚未选择。
+
+官方参考：[Git 集成](https://developers.cloudflare.com/pages/get-started/git-integration/)、[构建版本](https://developers.cloudflare.com/pages/configuration/build-image/)、[分支构建](https://developers.cloudflare.com/pages/configuration/branch-build-controls/)、[回退](https://developers.cloudflare.com/pages/configuration/rollbacks/)。
