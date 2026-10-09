@@ -2,6 +2,8 @@
 
 面向电力系统仿真的浏览器本地科研波形编辑器。在第一阶段项目上迭代，保留原始解析器、文件导入、分别 / 合并绘图与默认红黄蓝配色，新增 IEEE 尺寸模板、自由编辑、多子图、物理尺寸导出、矢量 PDF、批量 ZIP 与样式同步。项目保存和大数据降采样仍属第三阶段。
 
+**在线使用：[PowerPlot Studio](https://powerplot-studio.pages.dev)** · [源代码](https://github.com/13914491579/powerplot-studio)。无需登录，导入文件仅在浏览器内处理。
+
 ## 安装与运行
 
 推荐 Node.js 24 和 pnpm 11.25.0。项目使用 `pnpm-lock.yaml` 固定已验证依赖。
@@ -113,7 +115,7 @@ Vite 会提示 Plotly 绘图模块大于 500 kB；它已从首屏主包分离并
 
 ## Cloudflare Pages 部署
 
-项目为静态网站，计划采用 Pages 的 Git 集成自动构建。源代码已发布到 [GitHub 仓库](https://github.com/13914491579/powerplot-studio)，Cloudflare 网站尚未发布；实际部署状态记录在 [部署说明](docs/DEPLOYMENT.md)。Git 集成配置：
+项目已通过 Pages Git 集成发布：[正式网站](https://powerplot-studio.pages.dev)、[GitHub 仓库](https://github.com/13914491579/powerplot-studio)。开发分支自动预览已验证，详细验收结果见 [部署说明](docs/DEPLOYMENT.md)。Git 集成配置：
 
 - 构建命令：`pnpm build`
 - 输出目录：`dist`
@@ -126,7 +128,7 @@ Vite 会提示 Plotly 绘图模块大于 500 kB；它已从首屏主包分离并
 
 后续更新：创建开发分支、修改并执行 `pnpm check`、提交并推送、验收 Pages 预览后合并到 `main`。GitHub Actions 检查与 Pages 构建独立运行；若要禁止失败测试进入正式分支，需在 GitHub 配置分支规则要求 `check` 成功。Pages 使用 `pnpm build`，不会自动等待另一套 CI。具体登录、授权、构建设置、回退和公网验收步骤见 [部署说明](docs/DEPLOYMENT.md)。
 
-官方资料：[React / Pages](https://developers.cloudflare.com/pages/framework-guides/deploy-a-react-site/)、[构建配置](https://developers.cloudflare.com/pages/configuration/build-configuration/)、[构建工具版本](https://developers.cloudflare.com/pages/configuration/build-image/)、[Plotly 图片导出](https://plotly.com/javascript/static-image-export/)。本次未进行远程部署。
+官方资料：[React / Pages](https://developers.cloudflare.com/pages/framework-guides/deploy-a-react-site/)、[构建配置](https://developers.cloudflare.com/pages/configuration/build-configuration/)、[构建工具版本](https://developers.cloudflare.com/pages/configuration/build-image/)、[Plotly 图片导出](https://plotly.com/javascript/static-image-export/)。
 
 ## 开源依赖
 

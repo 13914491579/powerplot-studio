@@ -5,9 +5,13 @@
 - 本地项目已初始化 Git，发布分支为 `main`，已推送并关联 `origin/main`；首个提交为 `7281510c504ab91eebffdf7722d589337de3ba4e`。
 - GitHub 账号 `13914491579` 的公开仓库已创建；未添加项目许可证。
 - 实际 GitHub 仓库地址：https://github.com/13914491579/powerplot-studio
-- 实际 Pages 网站地址：尚未创建或发布。
-- 所有者已确认创建公开仓库及首次公开发布，并完成 Git 推送所需登录。Cloudflare 已进入 Pages Git 集成；GitHub App 安装页已限定为仅 `powerplot-studio`，等待用户点击 Install & Authorize 完成具体权限授权。Pages 项目尚未创建，公网验收未执行。
+- 实际 Pages 正式地址：https://powerplot-studio.pages.dev
+- 所有者已完成 GitHub / Cloudflare 登录及授权，GitHub App 仅访问 `powerplot-studio`；Pages Git 集成已创建并发布成功。
+- 首次正式部署对应 `01a1e3861d88aeeca58f59069543087e24b4efa2`，不可变地址：https://dc801a66.powerplot-studio.pages.dev 。构建日志确认 Node `24.19.0`、pnpm `11.25.0`、锁文件未变化、构建和资产发布成功。
+- 推送 `deployment-preview` 后自动产生预览：https://dd5a12a8.powerplot-studio.pages.dev 。正式域名未被预览替换。
+- 公网 Edge 验收 10 项最终全部通过（5 项首次通过、5 项访问超时或连接关闭后重试通过）；无最终失败。包括 TXT/CSV、独立/合并、非等间隔与尖峰、IEEE 模板、轴刻度、双三子图、PNG/SVG/矢量 PDF、ZIP、格式同步及刷新。新增隐私测试确认导入期间只有同源 GET 请求，无上传请求，刷新前后无严重控制台或页面错误。当前网络访问 `pages.dev` 存在间歇性连接问题，不将重试结果表述为全部首次通过。
 - 已保留全部第二阶段绘图逻辑；无项目许可证新增。
+- 最终执行 `pnpm.cmd check`：33 项单元测试、生产构建、10 项 Edge 浏览器测试全部首次通过。新增内嵌 SVG 网站图标，消除本地预览的 favicon 404。
 - 部署准备修改后执行 `pnpm.cmd check`：33 项单元测试、9 项 Edge 浏览器测试和生产构建全部通过。`git diff --cached --check` 通过；忽略规则验证通过，公开候选文件的常见凭据与个人绝对路径扫描未发现匹配。首个提交的 GitHub Ubuntu/Chromium CI 已全部成功：[运行结果](https://github.com/13914491579/powerplot-studio/actions/runs/37894096423)。
 
 ## 首次发布操作
@@ -20,7 +24,7 @@
 | 设置 | 值 |
 | --- | --- |
 | 项目名称 | `powerplot-studio`（名称是否可用以控制台为准） |
-| Framework preset | Vite（若列表无此项，手动填写同样的构建设置） |
+| Framework preset | React (Vite) |
 | Production branch | `main` |
 | Build command | `pnpm build` |
 | Build output directory | `dist` |
@@ -38,7 +42,7 @@
 
 Cloudflare Git 集成负责部署：推送 `main` 构建正式版本，其他分支生成预览。两套流程独立；Pages 的 `pnpm build` 失败不会产生可替换正式站点的成功部署，但 GitHub 测试失败不能自动阻止 Pages 构建。建议设置 GitHub `main` 分支规则：要求 PR 与 `check` 成功，禁止强制推送，验收预览后合并。
 
-发生问题时在 Pages 的 Deployments 选择之前成功的正式部署执行 Rollback；预览部署不是正式回退目标。随后用 `git revert` 提交修复以保持代码与网站一致，避免下一次推送恢复问题。尚未创建远程项目，所以自动触发、失败保留与回退目前仅完成配置准备，未实测。
+发生问题时在 Pages 的 Deployments 选择之前成功的正式部署执行 Rollback；预览部署不是正式回退目标。随后用 `git revert` 提交修复以保持代码与网站一致，避免下一次推送恢复问题。非正式分支自动预览已实测；未故意制造失败构建或执行回退，失败保留与回退依据 Pages 的产品机制及官方说明。
 
 ## 上线验收
 
@@ -47,8 +51,8 @@ Cloudflare Git 集成负责部署：推送 `main` 构建正式版本，其他分
 在项目根目录使用 PowerShell：
 
 ```powershell
-$env:PLAYWRIGHT_BASE_URL = '此处填写实际 HTTPS 地址'
-pnpm.cmd test:e2e
+$env:PLAYWRIGHT_BASE_URL = 'https://powerplot-studio.pages.dev'
+pnpm.cmd exec playwright test --retries=2
 Remove-Item Env:PLAYWRIGHT_BASE_URL
 ```
 
@@ -61,5 +65,7 @@ Remove-Item Env:PLAYWRIGHT_BASE_URL
 `.gitignore` 排除依赖、构建、测试截图/导出产物、环境文件、常见密钥文件和本地 Cloudflare 状态。没有运行时凭据；代码仅 fetch 同源示例、字体和内存 data URL，原始输入由 File API / Worker 在浏览器解析。示例仿真数据经所有者允许公开。
 
 字体保留 SIL OFL 文件。Times 系列 SVG 可能依赖接收设备字体；PDF 中文使用 Noto 字体替代，相关限制见 README。百万点性能优化仍属后续阶段。公开仓库的源代码会被他人读取，许可证尚未选择。
+
+同源 Noto 字体约 10 MB，公网首次加载可能较慢；公网测试单独延长等待时间，不改变产品绘图逻辑或断言。本地回归仍保留原等待阈值。GitHub 尚未设置强制要求测试成功的分支保护。
 
 官方参考：[Git 集成](https://developers.cloudflare.com/pages/get-started/git-integration/)、[构建版本](https://developers.cloudflare.com/pages/configuration/build-image/)、[分支构建](https://developers.cloudflare.com/pages/configuration/branch-build-controls/)、[回退](https://developers.cloudflare.com/pages/configuration/rollbacks/)。
