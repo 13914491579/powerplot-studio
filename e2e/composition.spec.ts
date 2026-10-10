@@ -2,7 +2,7 @@ import { test, expect, type Page } from '@playwright/test';
 import { readFileSync } from 'node:fs';
 import { inflateSync } from 'node:zlib';
 import JSZip from 'jszip';
-const samples = ['A','B','C'].map((name,i)=>({name:name+'.txt',mimeType:'text/plain',buffer:Buffer.from(`Time/s,P/pu,Udc/pu,Idc/pu\n${1+i},1,2,3\n${1.001+i},999,4,5\n${1.8+i},6,7,8`)}));
+const samples = ['A','B','C'].map((name,i)=>({name:name+'.txt',mimeType:'text/plain',buffer:Buffer.from(`Time/s,P/pu,Udc/pu,Idc/pu\n${1+i},1,2,3\n${1+i+[.001,.02,.5][i]},999,4,5\n${1.8+i},6,7,8`)}));
 async function tab(page:Page,name:string){await page.getByRole('navigation',{name:'绘图编辑分类'}).getByRole('button',{name,exact:true}).click();}
 async function ready(page:Page){await expect(page.locator('.chart-actions button').first()).toBeEnabled();}
 async function load(page:Page,duplicate=false){await page.goto('/');await page.locator('input[type=file]').setInputFiles(duplicate?samples.map(s=>({...s,name:'same.txt'})):samples);await ready(page);await page.getByRole('button',{name:'组合绘图',exact:true}).click();await tab(page,'子图');await page.getByRole('button',{name:'1×3 布局',exact:true}).click();await ready(page);}
@@ -13,7 +13,7 @@ async function inside(page:Page){const clipped=await page.locator('.plot-area').
 test('跨文件按文件/信号分配，原始采样与尖峰、复制和独立实例样式',async({page})=>{
   const errors:string[]=[];page.on('pageerror',e=>errors.push(e.message));await load(page);await assign(page,'文件');let f=await figure(page);
   expect(f.data.map(t=>t.yaxis)).toEqual(['y','y','y','y2','y2','y2','y3','y3','y3']);
-  const original=f.data.map(t=>({source:t.meta.sourceId,x:t.x,y:t.y}));expect(f.data[3].x).toEqual([2,2.001,2.8]);expect(f.data[0].y).toContain(999);
+  const original=f.data.map(t=>({source:t.meta.sourceId,x:t.x,y:t.y}));expect(f.data[3].x).toEqual([2,2.02,2.8]);expect(f.data[0].y).toContain(999);
   await assign(page,'信号');f=await figure(page);expect(f.data.map(t=>t.yaxis)).toEqual(['y','y2','y3','y','y2','y3','y','y2','y3']);
   expect(f.data.map(t=>({source:t.meta.sourceId,x:t.x,y:t.y}))).toEqual(original);
   await page.getByLabel('当前编辑子图').selectOption('1');await page.getByLabel('文件 1 · P/pu · 列 2',{exact:true}).check();await ready(page);expect((await figure(page)).data).toHaveLength(10);

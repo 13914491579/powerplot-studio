@@ -1,5 +1,13 @@
 # GitHub 与 Cloudflare Pages 部署
 
+## 2.2 预览验收（2026-10-10）
+
+开发分支 `feature/composition-2.2`，功能提交 `3f5c334593a6e9be722032a558af596c65b9d9cc`；[GitHub Linux/Chromium CI](https://github.com/13914491579/powerplot-studio/actions/runs/38020378597) 全部成功。本地完整检查：53 项单元、24 组 Edge 浏览器、TypeScript 和构建均通过。
+
+Cloudflare 构建日志确认资产发布与部署成功，实际预览为 [7341209a](https://7341209a.powerplot-studio.pages.dev)。对预览执行全部 24 组测试：首轮 15 组首次通过、8 组连接/等待超时重试后通过，1 组首页连接连续关闭而失败；该项随后单独重跑首次通过。因此全部场景已完成验收，不声称公网首轮整体退出码为 0。公网验收包括本地文件导入无上传、刷新、原有 2.1 功能与三种跨文件组合导出/ZIP。后续补充浏览器数据明确使用 .001、.02、.5 的首段采样间隔；本地完整 53/24 检查再次通过，并对同一公网预览补验数据保留/同源多实例场景，首页超时一次后重试通过。产品代码保持不变。
+
+正式入口保持 [powerplot-studio.pages.dev](https://powerplot-studio.pages.dev)。预览通过后合并 main，继续使用现有 Pages Git 集成；最终正式提交及发布状态见交付结果。
+
 ## 2.1 发布记录（2026-10-10）
 
 开发分支 `feature/grid-layout-2.1`；在既有 2.0 项目增量升级，原始解析器及导出管线继续使用，无依赖升级、无新服务或密钥。完整本地 `pnpm.cmd check` 已通过：45 项单元测试、18 组 Edge 端到端测试及生产构建。版本为 `2.1.0`。
