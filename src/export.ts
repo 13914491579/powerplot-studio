@@ -3,7 +3,7 @@ import type { PlotConfig } from './config';
 import { inches, pixelSize, validateConfig } from './config';
 import { withDpi } from './png';
 export type Format = 'png' | 'svg' | 'pdf';
-export interface Exporter { name: string; export: (format: Format) => Promise<Blob>; ranges: () => { x: number[]; y: number[][] } }
+export interface Exporter { name: string; export: (format: Format) => Promise<Blob>; ranges: () => { x: number[]; xPanels: number[][]; y: number[][] } }
 export function downloadBlob(blob: Blob, filename: string) {
   const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = filename; a.click();
   setTimeout(() => URL.revokeObjectURL(url), 30_000);

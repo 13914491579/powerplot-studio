@@ -1,5 +1,9 @@
 # GitHub 与 Cloudflare Pages 部署
 
+## 2.1 发布记录（2026-10-10）
+
+开发分支 `feature/grid-layout-2.1`；在既有 2.0 项目增量升级，原始解析器及导出管线继续使用，无依赖升级、无新服务或密钥。完整本地 `pnpm.cmd check` 已通过：45 项单元测试、18 组 Edge 端到端测试及生产构建。版本为 `2.1.0`。开发分支推送后先验收 Pages 预览，再合并 `main`，正式网站仍为 https://powerplot-studio.pages.dev 。本节将在公网验收后记录真实预览结果。
+
 ## 当前状态（2026-10-09）
 
 - 本地项目已初始化 Git，发布分支为 `main`，已推送并关联 `origin/main`；首个提交为 `7281510c504ab91eebffdf7722d589337de3ba4e`。

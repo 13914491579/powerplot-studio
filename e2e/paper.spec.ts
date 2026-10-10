@@ -44,9 +44,9 @@ test('IEEE 单双栏、手动范围与刻度、曲线样式、双三子图及矢
   await page.getByLabel('尺寸模板').selectOption('single'); await ready(page);
   await page.getByLabel('尺寸单位').selectOption('mm'); expect(Number(await page.getByLabel('图片宽度', { exact: true }).inputValue())).toBeCloseTo(88.9);
   await page.getByLabel('尺寸单位').selectOption('inch');
-  await tab(page, '子图'); await page.getByLabel('子图数量').selectOption('2'); await page.getByRole('button', { name: '顺序分配曲线到子图' }).click(); await ready(page);
+  await tab(page, '子图'); await page.getByLabel('子图数量').selectOption('2'); await page.getByRole('button', { name: '恢复布局推荐尺寸' }).click(); await page.getByRole('button', { name: '顺序分配曲线到子图' }).click(); await ready(page);
   expect((await figure(page)).data.map(t => t.yaxis)).toEqual(['y', 'y2', 'y']);
-  await page.getByLabel('子图数量').selectOption('3'); await page.getByRole('button', { name: '顺序分配曲线到子图' }).click(); await ready(page);
+  await page.getByLabel('子图数量').selectOption('3'); await page.getByRole('button', { name: '恢复布局推荐尺寸' }).click(); await page.getByRole('button', { name: '顺序分配曲线到子图' }).click(); await ready(page);
   const panels = await figure(page); expect(panels.data.map(t => t.yaxis)).toEqual(['y', 'y2', 'y3']); expect(panels.layout.xaxis2).toMatchObject({ matches: 'x' });
   expect(panels.data.map(t => t.y)).toEqual(original.map(t => t.y));
   await page.getByRole('textbox', { name: 'X 轴标题', exact: true }).fill('时间 / s');
@@ -57,7 +57,7 @@ test('IEEE 单双栏、手动范围与刻度、曲线样式、双三子图及矢
   const pdf = readFileSync('.qa/paper.pdf'); const content = pdf.toString('latin1');
   expect(content.startsWith('%PDF-')).toBe(true); expect(content).not.toContain('/Subtype /Image'); expect(content).toContain('/FontFile2');
   const mediaBox = content.match(/\/MediaBox\s*\[([^\]]+)\]/)![1].trim().split(/\s+/).map(Number);
-  expect(mediaBox[2]).toBeCloseTo(252); expect(mediaBox[3]).toBeCloseTo(324);
+  expect(mediaBox[2]).toBeCloseTo(252); expect(mediaBox[3]).toBeCloseTo(Number((await figure(page)).layout.height) * 72 / 96);
   const streams: string[] = [];
   for (const match of content.matchAll(/stream\r?\n/g)) {
     const start = match.index! + match[0].length, end = content.indexOf('endstream', start);
