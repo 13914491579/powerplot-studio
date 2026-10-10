@@ -1,5 +1,15 @@
 # GitHub 与 Cloudflare Pages 部署
 
+## 2.1 发布记录（2026-10-10）
+
+开发分支 `feature/grid-layout-2.1`；在既有 2.0 项目增量升级，原始解析器及导出管线继续使用，无依赖升级、无新服务或密钥。完整本地 `pnpm.cmd check` 已通过：45 项单元测试、18 组 Edge 端到端测试及生产构建。版本为 `2.1.0`。
+
+- 功能提交 `611d4c6a0377af393093eb862fc62e2644929799` 的 [GitHub Chromium CI](https://github.com/13914491579/powerplot-studio/actions/runs/38016262378) 成功。
+- 实际预览：https://ec60076c.powerplot-studio.pages.dev 。Cloudflare 预览构建与资产发布成功，正式站点在此期间保持 2.0。
+- 对上述公网预览执行全部 18 组 Edge 测试，最终通过；14 组首次通过，4 组因首页 `ERR_CONNECTION_CLOSED` / `ERR_TIMED_OUT` 重试后成功，退出码为 0。此次网络不稳定与此前部署验收相同，不声称公网全部首次通过。
+- 公网八种布局、独立/按列/全部 X、编号、配置恢复、尺寸推荐/手动保护、空坐标系、PNG/SVG/PDF、批量与旧工作流均通过。代表性 PNG、SVG 与 PDF 下载产物已检查；导入不触发上传请求，刷新正常。
+- 验收通过后将开发分支合并 `main`，由既有 Git 集成部署正式版；正式入口保持 https://powerplot-studio.pages.dev 。功能代码在预览验收后没有变化，后续仅补充发布记录。
+
 ## 当前状态（2026-10-09）
 
 - 本地项目已初始化 Git，发布分支为 `main`，已推送并关联 `origin/main`；首个提交为 `7281510c504ab91eebffdf7722d589337de3ba4e`。

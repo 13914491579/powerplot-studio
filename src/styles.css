@@ -1,5 +1,11 @@
 @import "tailwindcss";
 
+.layout-picker { display:grid; grid-template-columns:repeat(4,1fr); gap:7px; margin:14px 0; }
+.layout-picker button { border:1px solid #d8e0eb; border-radius:7px; padding:7px; color:#52637a; background:white; font-size:11px; }
+.layout-picker button[aria-pressed="true"] { border-color:#2563eb; background:#eff6ff; color:#2563eb; }
+.layout-thumbnail { display:grid; gap:3px; height:28px; margin-bottom:5px; }
+.layout-thumbnail i { border:1px solid currentColor; background:#e8eef8; border-radius:2px; }
+
 :root { font-family: Inter, "Segoe UI", "Microsoft YaHei", sans-serif; color: #233047; background: #f5f7fb; font-synthesis: none; text-rendering: optimizeLegibility; -webkit-font-smoothing: antialiased; }
 * { box-sizing: border-box; }
 body { margin: 0; min-width: 760px; }

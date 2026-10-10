@@ -63,7 +63,7 @@ export default function App() {
     const targets = files.filter(f => !activeFiles.some(source => source.id === f.id));
     if (!targets.length) { setStatus('没有其他独立图表可同步，请在分别绘图模式选择源图表。'); return; }
     const displayed = ranges ? exporters.current.get(activeId)?.ranges() : undefined;
-    const source = displayed ? { ...config, x: { ...config.x, autoRange: false, min: displayed.x[0], max: displayed.x[1] }, y: config.y.map((a, i) => ({ ...a, autoRange: false, min: displayed.y[i][0], max: displayed.y[i][1] })) } : config;
+    const source = displayed ? { ...config, x: { ...config.x, autoRange: false, min: displayed.x[0], max: displayed.x[1] }, xPanels: config.xPanels.map((a, i) => ({ ...a, autoRange: false, min: displayed.xPanels[i + 1]?.[0] ?? a.min, max: displayed.xPanels[i + 1]?.[1] ?? a.max })), y: config.y.map((a, i) => ({ ...a, autoRange: false, min: displayed.y[i]?.[0] ?? a.min, max: displayed.y[i]?.[1] ?? a.max })) } : config;
     setConfigs(previous => ({ ...previous, ...Object.fromEntries(targets.map(f => [f.id, syncConfig(source, previous[f.id] ?? defaultConfig(), { colors, ranges })])) }));
     setStyles(previous => syncCurveStyles(activeFiles, targets, previous, config, { colors, ranges }));
     setStatus(`已同步格式到 ${targets.length} 张图表，原始数据与曲线名称保留`);
@@ -112,7 +112,7 @@ export default function App() {
 
   return <div className="app-shell" onDragOver={e => { e.preventDefault(); if (e.dataTransfer.types.includes('Files')) setDragging(true); }} onDragLeave={e => { if (!e.currentTarget.contains(e.relatedTarget as Node)) setDragging(false); }} onDrop={e => { e.preventDefault(); setDragging(false); void loadFiles(Array.from(e.dataTransfer.files)); }}>
     <header className="topbar">
-      <a className="brand" href="./"><span className="brand-icon"><Logo /></span><span>PowerPlot <strong>Studio</strong><small>电力仿真 · 科研波形</small></span><span className="version">2.0 IEEE</span></a>
+      <a className="brand" href="./"><span className="brand-icon"><Logo /></span><span>PowerPlot <strong>Studio</strong><small>电力仿真 · 科研波形</small></span><span className="version">2.1 GRID</span></a>
       <div className="top-actions"><span className="local-badge"><span />数据仅在本地处理</span><button className="button primary" onClick={() => input.current?.click()} disabled={busy}><span>＋</span> 导入数据</button></div>
       <input ref={input} type="file" multiple accept=".txt,.csv" className="sr-only" aria-label="导入 TXT 或 CSV 文件" onChange={e => { void loadFiles(Array.from(e.target.files || [])); e.target.value = ''; }} />
     </header>
@@ -127,9 +127,9 @@ export default function App() {
         <section className="panel-section"><div className="section-heading"><h2>多文件绘图</h2></div><div className="segmented"><button className={!merged ? 'active' : ''} onClick={() => setMerged(false)} aria-pressed={!merged}>分别绘图</button><button className={merged ? 'active' : ''} onClick={() => setMerged(true)} aria-pressed={merged}>合并绘图</button></div><p className="muted compact">{merged ? '叠加所有信号，保留各文件的原始时间。' : '每个文件一张图，多列信号绘制在同一图中。'}</p></section>
 
         <section className="panel-section"><div className="section-heading"><h2>基础绘图设置</h2></div>
-          <label className="field">X 轴标题<input value={config.x.title} placeholder="自动读取时间列名称" onChange={e => changeConfig({ ...config, x: { ...config.x, title: e.target.value } })} /></label>
+          <label className="field">X 轴标题<input value={config.x.title} placeholder="自动读取时间列名称" onChange={e => changeConfig({ ...config, x: { ...config.x, title: e.target.value }, xPanels: config.xPanels.map(a => ({ ...a, title: e.target.value })) })} /></label>
           <label className="field">Y 轴标题<input value={config.y[0].title} placeholder="自动读取信号名称" onChange={e => changeConfig({ ...config, y: config.y.map((a, i) => i === 0 ? { ...a, title: e.target.value } : a) })} /></label>
-          <div className="toggle-row"><label><input type="checkbox" checked={config.x.grid} onChange={e => changeConfig({ ...config, x: { ...config.x, grid: e.target.checked }, y: config.y.map(a => ({ ...a, grid: e.target.checked })) })} />显示网格</label><label><input type="checkbox" checked={config.legend.show} onChange={e => changeConfig({ ...config, legend: { ...config.legend, show: e.target.checked } })} />显示图例</label></div>
+          <div className="toggle-row"><label><input type="checkbox" checked={config.x.grid} onChange={e => changeConfig({ ...config, x: { ...config.x, grid: e.target.checked }, xPanels: config.xPanels.map(a => ({ ...a, grid: e.target.checked })), y: config.y.map(a => ({ ...a, grid: e.target.checked })) })} />显示网格</label><label><input type="checkbox" checked={config.legend.show} onChange={e => changeConfig({ ...config, legend: { ...config.legend, show: e.target.checked } })} />显示图例</label></div>
           <button className="button secondary full" onClick={() => setRevision(r => r + 1)} disabled={!files.length}>复位所有图表视图</button>
         </section>
         <div className="sidebar-note"><span className="note-icon">◎</span><p>原始数据完整保留<br/><span>不插值，不滤波，不平滑</span></p></div>
@@ -141,7 +141,7 @@ export default function App() {
         {status && <div className="status-line" role="status">{busy && <span className="spinner" />}{status}</div>}
         {errors.length > 0 && <div className="error-box" role="alert"><strong>操作未完成</strong>{errors.map((error, i) => <p key={i}>{error}</p>)}<button onClick={() => setErrors([])}>关闭提示</button></div>}
         {!files.length ? <div className="empty-state"><div className="empty-plot"><svg viewBox="0 0 280 100" aria-hidden="true"><path className="mini-grid" d="M0 25h280M0 50h280M0 75h280M40 0v100M90 0v100M140 0v100M190 0v100M240 0v100"/><path className="mini-wave" d="M0 60h55l8-12 7 30 8-61 9 69 10-49 10 21 12-9 13 5 18-3h120"/></svg></div><h2>让仿真数据成为清晰的波形</h2><p>拖入 TXT / CSV 文件，自动识别时间与信号列。<br/>多曲线、多文件，一次导入即可查看。</p><button className="button primary" onClick={() => input.current?.click()} disabled={busy}>＋ 选择数据文件</button><button className="text-button" onClick={loadExamples} disabled={busy}>先体验示例数据 →</button><div className="empty-features"><span>原始时间轴</span><span>交互缩放</span><span>PNG / SVG 导出</span></div></div> : <Suspense fallback={<p className="status-line" role="status">正在加载绘图引擎…</p>}><div className="chart-list">{groups.map(group => <Chart key={group.id} id={group.id} files={group.files} styles={styles} merged={merged} config={configs[group.id] ?? emptyConfig.current} revision={revision} selected={activeId === group.id} onSelect={() => setSelectedId(group.id)} register={register} onVisibility={(key, visible) => changeStyle(key, { visible })} />)}</div></Suspense>}
-        <footer className="workspace-footer">PowerPlot Studio · 面向电力系统仿真与科研绘图<span>第二阶段 / 论文绘图</span></footer>
+        <footer className="workspace-footer">PowerPlot Studio · 面向电力系统仿真与科研绘图<span>2.1 / 网格论文绘图</span></footer>
       </main>
 
       <aside className="inspector">

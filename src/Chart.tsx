@@ -3,7 +3,7 @@ import Plotly from 'plotly.js-basic-dist-min';
 import type { PlotlyHTMLElement, PlotData } from 'plotly.js';
 import type { Dataset } from './parser';
 import { type Styles } from './model';
-import { validateConfig, type PlotConfig } from './config';
+import { validateConfig, xFor, type PlotConfig } from './config';
 import { buildFigure } from './layout';
 import { downloadBlob, exportChart, uniqueNames, type Exporter, type Format } from './export';
 
@@ -55,10 +55,10 @@ export default function Chart({ id, files, styles, merged, config, revision, onV
     queue.current = queue.current.catch(() => {}).then(async () => {
       if (cancelled || !alive.current) return;
       const invalid = validateConfig(config); if (invalid.length) throw new Error(invalid.join(' '));
-      const { traces, layout, keys, width, height } = buildFigure(files, styles, merged, config, revision);
+      const { traces, emptyTraces, layout, keys, width, height } = buildFigure(files, styles, merged, config, revision);
       keysRef.current = keys;
       if (config.font.family === 'Noto Sans SC') await document.fonts.load('16px "Noto Sans SC"');
-      const gd = await Plotly.react(div, traces, layout, {
+      const gd = await Plotly.react(div, [...traces, ...emptyTraces], layout, {
         responsive: false, displaylogo: false, scrollZoom: true,
         modeBarButtonsToRemove: ['toImage', 'select2d', 'lasso2d'],
         doubleClick: 'reset',
@@ -81,7 +81,7 @@ export default function Chart({ id, files, styles, merged, config, revision, onV
   useEffect(() => {
     register(id, { name: merged ? 'PowerPlot-合并波形' : files[0].filename, ranges: () => {
       const layout = (element.current as unknown as PlotlyHTMLElement)?.layout as unknown as Record<string, { range?: number[] }>;
-      return { x: layout?.xaxis?.range ?? [config.x.min, config.x.max], y: config.y.map((a, i) => layout?.[`yaxis${i ? i + 1 : ''}`]?.range ?? [a.min, a.max]) };
+      return { x: layout?.xaxis?.range ?? [config.x.min, config.x.max], xPanels: Array.from({ length: 4 }, (_, i) => layout?.[`xaxis${i ? i + 1 : ''}`]?.range ?? [xFor(config, i).min, xFor(config, i).max]), y: config.y.map((a, i) => layout?.[`yaxis${i ? i + 1 : ''}`]?.range ?? [a.min, a.max]) };
     }, export: async format => {
       await queue.current;
       if (!readyRef.current || !element.current) throw new Error(`${title}：图表尚未就绪或参数无效。`);
@@ -109,6 +109,7 @@ export default function Chart({ id, files, styles, merged, config, revision, onV
     </header>
     <div ref={viewport} className="plot-viewport" style={{ height: plotHeight * scale }}><div ref={element} className="plot-area" style={{ width: plotWidth, height: plotHeight, transform: `scale(${scale})`, transformOrigin: 'top left' }} aria-label={`${title} 波形预览`} /></div>
     {error && <p className="inline-error" role="alert">{error}</p>}
+    {files.some(f => f.signals.some((_, i) => (styles[`${f.id}:${i}`]?.panel ?? 1) > config.panels)) && <p className="status-line" role="status">部分曲线所属子图超出当前布局，暂不显示。分配及数据保留，增加子图后恢复。</p>}
     <footer className="chart-footer"><span>原始采样 · 无插值 / 无平滑</span><span>拖动缩放 · 滚轮缩放 · 双击复位</span></footer>
   </article>;
 }
