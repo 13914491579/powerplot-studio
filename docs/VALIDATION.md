@@ -59,3 +59,5 @@ GitHub Linux/Chromium CI 成功；对实际 Pages 预览执行全部 18 组 Edge
 ## 验证边界
 
 Chrome 共享 Chromium 与标准 File API / Web Worker / SVG 路线，但本机本轮实际浏览器验收使用 Edge；尚未单独运行 Chrome。百万点性能、IEEE 物理尺寸 / DPI 元数据、矢量 PDF、批量 ZIP、模板与项目恢复属于后续阶段，未宣称完成。Cloudflare Pages 部署文档已提供，本次未发布到远程托管。
+
+2.2 正式站点七组 Edge 上线验收完成（六组首次通过，一组首页超时重试通过，退出码 0）；最新预览及发布提交详见 DEPLOYMENT.md 的正式发布补充记录。
