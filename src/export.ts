@@ -69,10 +69,12 @@ export async function exportChart(gd: PlotlyHTMLElement, config: PlotConfig, for
   const svg = new DOMParser().parseFromString(svgText, 'image/svg+xml').documentElement as unknown as SVGSVGElement;
   const width = size.width * 72, height = size.height * 72;
   const pdf = new jsPDF({ orientation: width >= height ? 'landscape' : 'portrait', unit: 'pt', format: [width, height], compress: true, putOnlyUsedFonts: true });
-  const unicode = Array.from(svg.querySelectorAll('text')).some(t => /[^\x20-\x7e]/.test(t.textContent || '')) || config.font.family === 'Noto Sans SC';
+  // File/signal separator U+00B7 is supported by the standard Latin PDF fonts.
+  // Keeping it in Times avoids CJK fallback widening and clipping Latin legends.
+  const unicode = Array.from(svg.querySelectorAll('text')).some(t => /[^\x20-\x7e\u00b7]/.test(t.textContent || '')) || config.font.family === 'Noto Sans SC';
   if (unicode) { pdf.addFileToVFS('NotoSansSC.ttf', await pdfFont()); pdf.addFont('NotoSansSC.ttf', 'PowerPlotCJK', 'normal'); pdf.setFont('PowerPlotCJK'); }
   for (const text of svg.querySelectorAll('text')) {
-    const family = /[^\x20-\x7e]/.test(text.textContent || '') || config.font.family === 'Noto Sans SC' ? 'PowerPlotCJK' : config.font.family.includes('Times') ? 'times' : config.font.family.includes('Courier') ? 'courier' : 'helvetica';
+    const family = /[^\x20-\x7e\u00b7]/.test(text.textContent || '') || config.font.family === 'Noto Sans SC' ? 'PowerPlotCJK' : config.font.family.includes('Times') ? 'times' : config.font.family.includes('Courier') ? 'courier' : 'helvetica';
     if (family === 'PowerPlotCJK') for (const char of Array.from(text.textContent || '')) {
       const code = char.codePointAt(0)!;
       if (!/\s/.test(char) && (code > 0xffff || !pdf.getFont().metadata.characterToGlyph(code))) throw new Error(`PDF 字体不支持字符“${char}”，请替换该标签字符或导出 SVG。`);

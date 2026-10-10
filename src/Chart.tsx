@@ -1,3 +1,4 @@
+import { type Composition } from './composition';
 import { useEffect, useRef, useState } from 'react';
 import Plotly from 'plotly.js-basic-dist-min';
 import type { PlotlyHTMLElement, PlotData } from 'plotly.js';
@@ -8,13 +9,13 @@ import { buildFigure } from './layout';
 import { downloadBlob, exportChart, uniqueNames, type Exporter, type Format } from './export';
 
 interface Props {
-  id: string; files: Dataset[]; styles: Styles; merged: boolean; config: PlotConfig; revision: number;
+  id: string; files: Dataset[]; styles: Styles; merged: boolean; config: PlotConfig; revision: number; composition?: Composition;
   selected: boolean; onSelect: () => void;
   register: (id: string, exporter: Exporter | null) => void;
   onVisibility: (key: string, visible: boolean) => void;
 }
 
-export default function Chart({ id, files, styles, merged, config, revision, onVisibility, selected, onSelect, register }: Props) {
+export default function Chart({ id, files, styles, merged, config, revision, onVisibility, selected, onSelect, register, composition }: Props) {
   const element = useRef<HTMLDivElement>(null);
   const queue = useRef<Promise<unknown>>(Promise.resolve());
   const alive = useRef(false);
@@ -30,7 +31,7 @@ export default function Chart({ id, files, styles, merged, config, revision, onV
   const plotWidth = geometry.width, plotHeight = geometry.height;
   const scale = viewportWidth / plotWidth;
   const keysRef = useRef<string[]>([]);
-  const title = merged ? '合并波形' : files[0].filename;
+  const title = composition ? '跨文件组合波形' : merged ? '合并波形' : files[0].filename;
   const curveCount = files.reduce((n, f) => n + f.signals.length, 0);
 
   useEffect(() => {
@@ -55,7 +56,7 @@ export default function Chart({ id, files, styles, merged, config, revision, onV
     queue.current = queue.current.catch(() => {}).then(async () => {
       if (cancelled || !alive.current) return;
       const invalid = validateConfig(config); if (invalid.length) throw new Error(invalid.join(' '));
-      const { traces, emptyTraces, layout, keys, width, height } = buildFigure(files, styles, merged, config, revision);
+      const { traces, emptyTraces, layout, keys, width, height } = buildFigure(files, styles, merged, config, revision, composition);
       keysRef.current = keys;
       if (config.font.family === 'Noto Sans SC') await document.fonts.load('16px "Noto Sans SC"');
       const gd = await Plotly.react(div, [...traces, ...emptyTraces], layout, {
@@ -76,10 +77,10 @@ export default function Chart({ id, files, styles, merged, config, revision, onV
       if (!cancelled && alive.current) { setGeometry({ width, height }); readyRef.current = true; setReady(true); setError(''); }
     }).catch(e => { if (!cancelled && alive.current) setError(`绘图失败：${e instanceof Error ? e.message : String(e)}`); });
     return () => { cancelled = true; };
-  }, [styles, config, merged, files, revision]);
+  }, [styles, config, merged, files, revision, composition]);
 
   useEffect(() => {
-    register(id, { name: merged ? 'PowerPlot-合并波形' : files[0].filename, ranges: () => {
+    register(id, { name: composition ? 'PowerPlot-组合波形' : merged ? 'PowerPlot-合并波形' : files[0].filename, ranges: () => {
       const layout = (element.current as unknown as PlotlyHTMLElement)?.layout as unknown as Record<string, { range?: number[] }>;
       return { x: layout?.xaxis?.range ?? [config.x.min, config.x.max], xPanels: Array.from({ length: 4 }, (_, i) => layout?.[`xaxis${i ? i + 1 : ''}`]?.range ?? [xFor(config, i).min, xFor(config, i).max]), y: config.y.map((a, i) => layout?.[`yaxis${i ? i + 1 : ''}`]?.range ?? [a.min, a.max]) };
     }, export: async format => {
@@ -88,7 +89,7 @@ export default function Chart({ id, files, styles, merged, config, revision, onV
       return exportChart(element.current as unknown as PlotlyHTMLElement, config, format);
     } });
     return () => register(id, null);
-  }, [config, id, title, files, merged, register]);
+  }, [config, id, title, files, merged, register, composition]);
 
   async function download(format: Format) {
     if (!ready || !element.current) return;
@@ -98,7 +99,7 @@ export default function Chart({ id, files, styles, merged, config, revision, onV
       await queue.current;
       const gd = element.current as unknown as PlotlyHTMLElement;
       const blob = await exportChart(gd, config, format);
-      downloadBlob(blob, uniqueNames([merged ? 'PowerPlot-合并波形' : files[0].filename], format)[0]);
+      downloadBlob(blob, uniqueNames([composition ? 'PowerPlot-组合波形' : merged ? 'PowerPlot-合并波形' : files[0].filename], format)[0]);
     } catch (e) { setError(`导出失败：${e instanceof Error ? e.message : String(e)}`); }
     finally { setExporting(false); }
   }
@@ -109,7 +110,7 @@ export default function Chart({ id, files, styles, merged, config, revision, onV
     </header>
     <div ref={viewport} className="plot-viewport" style={{ height: plotHeight * scale }}><div ref={element} className="plot-area" style={{ width: plotWidth, height: plotHeight, transform: `scale(${scale})`, transformOrigin: 'top left' }} aria-label={`${title} 波形预览`} /></div>
     {error && <p className="inline-error" role="alert">{error}</p>}
-    {files.some(f => f.signals.some((_, i) => (styles[`${f.id}:${i}`]?.panel ?? 1) > config.panels)) && <p className="status-line" role="status">部分曲线所属子图超出当前布局，暂不显示。分配及数据保留，增加子图后恢复。</p>}
+    {(composition ? Object.values(composition.members).some(ps => ps.some(p => p > config.panels)) : files.some(f => f.signals.some((_, i) => (styles[`${f.id}:${i}`]?.panel ?? 1) > config.panels))) && <p className="status-line" role="status">部分曲线所属子图超出当前布局，暂不显示。分配及数据保留，增加子图后恢复。</p>}
     <footer className="chart-footer"><span>原始采样 · 无插值 / 无平滑</span><span>拖动缩放 · 滚轮缩放 · 双击复位</span></footer>
   </article>;
 }

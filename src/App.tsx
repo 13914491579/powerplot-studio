@@ -1,3 +1,4 @@
+import { emptyComposition, removeSources, type Composition } from './composition';
 import { lazy, Suspense, useCallback, useMemo, useRef, useState } from 'react';
 import Editor from './Editor';
 import { curveDefaults, defaultConfig, syncConfig, syncCurveStyles, type PlotConfig } from './config';
@@ -18,8 +19,10 @@ function Logo() { return <svg viewBox="0 0 32 32" fill="none" aria-hidden="true"
 export default function App() {
   const [files, setFiles] = useState<Dataset[]>([]);
   const [styles, setStyles] = useState<Styles>({});
-  const [merged, setMerged] = useState(false);
-  const [configs, setConfigs] = useState<Record<string, PlotConfig>>({ merged: defaultConfig() });
+  const [mode, setMode] = useState<'separate' | 'merged' | 'composition'>('separate');
+  const merged = mode !== 'separate';
+  const [composition, setComposition] = useState<Composition>(emptyComposition);
+  const [configs, setConfigs] = useState<Record<string, PlotConfig>>({ merged: defaultConfig(), composition: defaultConfig() });
   const emptyConfig = useRef(defaultConfig());
   const [selectedId, setSelectedId] = useState('');
   const [exporting, setExporting] = useState(false);
@@ -35,13 +38,14 @@ export default function App() {
   const totalCurves = files.reduce((sum, f) => sum + f.signals.length, 0);
   const totalPoints = files.reduce((sum, f) => sum + f.time.length, 0);
   const ranges = useMemo(() => Object.fromEntries(files.map(f => [f.id, timeRange(f.time)])), [files]);
-  const groups = useMemo(() => merged ? [{ id: 'merged', files }] : files.map(f => ({ id: f.id, files: [f] })), [files, merged]);
-  const activeId = merged ? 'merged' : files.some(f => f.id === selectedId) ? selectedId : files[0]?.id ?? '';
+  const groups = useMemo(() => merged ? [{ id: mode, files }] : files.map(f => ({ id: f.id, files: [f] })), [files, mode, merged]);
+  const activeId = merged ? mode : files.some(f => f.id === selectedId) ? selectedId : files[0]?.id ?? '';
   const activeFiles = groups.find(g => g.id === activeId)?.files ?? [];
   const config = configs[activeId] ?? emptyConfig.current;
   function changeConfig(next: PlotConfig) {
     setConfigs(previous => ({ ...previous, [activeId || 'merged']: next }));
-    if (next.template !== config.template && next.template !== 'custom') activeFiles.forEach(f => f.signals.forEach((_, i) => changeStyle(curveKey(f.id, i), { width: next.lineWidth })));
+    if (mode === 'composition') { if (next.lineWidth !== config.lineWidth || next.template !== config.template) setComposition(old => ({ ...old, styles: Object.fromEntries(Object.entries(old.styles).map(([key, style]) => [key, { ...style, width: next.lineWidth }])) })); }
+    else if (next.template !== config.template && next.template !== 'custom') activeFiles.forEach(f => f.signals.forEach((_, i) => changeStyle(curveKey(f.id, i), { width: next.lineWidth })));
   }
   async function exportFromPanel(format: Format, all: boolean) {
     if (exporting) return;
@@ -106,13 +110,14 @@ export default function App() {
   }
   function removeFile(id: string) {
     setFiles(previous => previous.filter(f => f.id !== id));
+    setComposition(previous => removeSources(previous, id));
     setStyles(previous => Object.fromEntries(Object.entries(previous).filter(([key]) => !key.startsWith(`${id}:`))));
     setConfigs(previous => Object.fromEntries(Object.entries(previous).filter(([key]) => key !== id)));
   }
 
   return <div className="app-shell" onDragOver={e => { e.preventDefault(); if (e.dataTransfer.types.includes('Files')) setDragging(true); }} onDragLeave={e => { if (!e.currentTarget.contains(e.relatedTarget as Node)) setDragging(false); }} onDrop={e => { e.preventDefault(); setDragging(false); void loadFiles(Array.from(e.dataTransfer.files)); }}>
     <header className="topbar">
-      <a className="brand" href="./"><span className="brand-icon"><Logo /></span><span>PowerPlot <strong>Studio</strong><small>电力仿真 · 科研波形</small></span><span className="version">2.1 GRID</span></a>
+      <a className="brand" href="./"><span className="brand-icon"><Logo /></span><span>PowerPlot <strong>Studio</strong><small>电力仿真 · 科研波形</small></span><span className="version">2.2 COMPOSE</span></a>
       <div className="top-actions"><span className="local-badge"><span />数据仅在本地处理</span><button className="button primary" onClick={() => input.current?.click()} disabled={busy}><span>＋</span> 导入数据</button></div>
       <input ref={input} type="file" multiple accept=".txt,.csv" className="sr-only" aria-label="导入 TXT 或 CSV 文件" onChange={e => { void loadFiles(Array.from(e.target.files || [])); e.target.value = ''; }} />
     </header>
@@ -124,7 +129,7 @@ export default function App() {
           {files.length > 0 ? <ul className="file-list">{files.map(file => <li key={file.id}><span className="file-icon">TXT</span><div><strong title={file.filename}>{file.filename}</strong><small>{file.time.length.toLocaleString()} 个采样点 · {file.signals.length} 条曲线</small><small title={file.timeLabel}>{ranges[file.id]}</small></div><button className="remove-file" onClick={() => removeFile(file.id)} aria-label={`移除 ${file.filename}`} title="移除文件">×</button></li>)}</ul> : <p className="muted compact">支持逗号、Tab、空格分隔的数据。</p>}
         </section>
 
-        <section className="panel-section"><div className="section-heading"><h2>多文件绘图</h2></div><div className="segmented"><button className={!merged ? 'active' : ''} onClick={() => setMerged(false)} aria-pressed={!merged}>分别绘图</button><button className={merged ? 'active' : ''} onClick={() => setMerged(true)} aria-pressed={merged}>合并绘图</button></div><p className="muted compact">{merged ? '叠加所有信号，保留各文件的原始时间。' : '每个文件一张图，多列信号绘制在同一图中。'}</p></section>
+        <section className="panel-section"><div className="section-heading"><h2>多文件绘图</h2></div><div className="segmented"><button className={mode === 'separate' ? 'active' : ''} onClick={() => setMode('separate')} aria-pressed={mode === 'separate'}>分别绘图</button><button className={mode === 'merged' ? 'active' : ''} onClick={() => setMode('merged')} aria-pressed={mode === 'merged'}>合并绘图</button><button className={mode === 'composition' ? 'active' : ''} onClick={() => setMode('composition')} aria-pressed={mode === 'composition'}>组合绘图</button></div><p className="muted compact">{mode === 'composition' ? '自由选择跨文件信号，组合为一张多子图画布。' : merged ? '叠加所有信号，保留各文件的原始时间。' : '每个文件一张图，多列信号绘制在同一图中。'}</p></section>
 
         <section className="panel-section"><div className="section-heading"><h2>基础绘图设置</h2></div>
           <label className="field">X 轴标题<input value={config.x.title} placeholder="自动读取时间列名称" onChange={e => changeConfig({ ...config, x: { ...config.x, title: e.target.value }, xPanels: config.xPanels.map(a => ({ ...a, title: e.target.value })) })} /></label>
@@ -137,16 +142,16 @@ export default function App() {
 
       <main className="preview-pane">
         <div className="workspace-title"><div><span className="eyebrow">WAVEFORM WORKSPACE</span><h1>波形工作区</h1><p>从仿真数据到清晰曲线。</p></div><button className="button secondary" onClick={loadExamples} disabled={busy}>加载示例数据</button></div>
-        <div className="summary-bar"><span><b>{merged && files.length ? 1 : files.length}</b> 张图表</span><span><b>{totalCurves}</b> 条曲线</span><span><b>{totalPoints.toLocaleString()}</b> 个时间采样点</span><span className="summary-end">{merged ? '合并视图' : '独立视图'}</span></div>
+        <div className="summary-bar"><span><b>{merged && files.length ? 1 : files.length}</b> 张图表</span><span><b>{totalCurves}</b> 条曲线</span><span><b>{totalPoints.toLocaleString()}</b> 个时间采样点</span><span className="summary-end">{mode === 'composition' ? '组合视图' : merged ? '合并视图' : '独立视图'}</span></div>
         {status && <div className="status-line" role="status">{busy && <span className="spinner" />}{status}</div>}
         {errors.length > 0 && <div className="error-box" role="alert"><strong>操作未完成</strong>{errors.map((error, i) => <p key={i}>{error}</p>)}<button onClick={() => setErrors([])}>关闭提示</button></div>}
-        {!files.length ? <div className="empty-state"><div className="empty-plot"><svg viewBox="0 0 280 100" aria-hidden="true"><path className="mini-grid" d="M0 25h280M0 50h280M0 75h280M40 0v100M90 0v100M140 0v100M190 0v100M240 0v100"/><path className="mini-wave" d="M0 60h55l8-12 7 30 8-61 9 69 10-49 10 21 12-9 13 5 18-3h120"/></svg></div><h2>让仿真数据成为清晰的波形</h2><p>拖入 TXT / CSV 文件，自动识别时间与信号列。<br/>多曲线、多文件，一次导入即可查看。</p><button className="button primary" onClick={() => input.current?.click()} disabled={busy}>＋ 选择数据文件</button><button className="text-button" onClick={loadExamples} disabled={busy}>先体验示例数据 →</button><div className="empty-features"><span>原始时间轴</span><span>交互缩放</span><span>PNG / SVG 导出</span></div></div> : <Suspense fallback={<p className="status-line" role="status">正在加载绘图引擎…</p>}><div className="chart-list">{groups.map(group => <Chart key={group.id} id={group.id} files={group.files} styles={styles} merged={merged} config={configs[group.id] ?? emptyConfig.current} revision={revision} selected={activeId === group.id} onSelect={() => setSelectedId(group.id)} register={register} onVisibility={(key, visible) => changeStyle(key, { visible })} />)}</div></Suspense>}
-        <footer className="workspace-footer">PowerPlot Studio · 面向电力系统仿真与科研绘图<span>2.1 / 网格论文绘图</span></footer>
+        {!files.length ? <div className="empty-state"><div className="empty-plot"><svg viewBox="0 0 280 100" aria-hidden="true"><path className="mini-grid" d="M0 25h280M0 50h280M0 75h280M40 0v100M90 0v100M140 0v100M190 0v100M240 0v100"/><path className="mini-wave" d="M0 60h55l8-12 7 30 8-61 9 69 10-49 10 21 12-9 13 5 18-3h120"/></svg></div><h2>让仿真数据成为清晰的波形</h2><p>拖入 TXT / CSV 文件，自动识别时间与信号列。<br/>多曲线、多文件，一次导入即可查看。</p><button className="button primary" onClick={() => input.current?.click()} disabled={busy}>＋ 选择数据文件</button><button className="text-button" onClick={loadExamples} disabled={busy}>先体验示例数据 →</button><div className="empty-features"><span>原始时间轴</span><span>交互缩放</span><span>PNG / SVG 导出</span></div></div> : <Suspense fallback={<p className="status-line" role="status">正在加载绘图引擎…</p>}><div className="chart-list">{groups.map(group => <Chart key={group.id} id={group.id} files={group.files} styles={styles} merged={merged} composition={mode === 'composition' ? composition : undefined} config={configs[group.id] ?? emptyConfig.current} revision={revision} selected={activeId === group.id} onSelect={() => setSelectedId(group.id)} register={register} onVisibility={(key, visible) => mode === 'composition' ? setComposition(old => ({ ...old, styles: { ...old.styles, [key]: { ...old.styles[key], visible } } })) : changeStyle(key, { visible })} />)}</div></Suspense>}
+        <footer className="workspace-footer">PowerPlot Studio · 面向电力系统仿真与科研绘图<span>2.2 / 跨文件组合绘图</span></footer>
       </main>
 
       <aside className="inspector">
-        <div className="editor-source"><strong>正在编辑</strong><select aria-label="当前图表" value={activeId} onChange={e => setSelectedId(e.target.value)} disabled={!files.length}>{files.length ? groups.map(g => <option key={g.id} value={g.id}>{g.id === 'merged' ? '合并波形' : g.files[0].filename}</option>) : <option value="">请先导入数据</option>}</select></div>
-        <Editor config={config} onChange={changeConfig} files={activeFiles} styles={styles} changeStyle={changeStyle} exporting={exporting} exportCurrent={format => { void exportFromPanel(format, false); }} exportAll={format => { void exportFromPanel(format, true); }} sync={syncFormat} />
+        <div className="editor-source"><strong>正在编辑</strong><select aria-label="当前图表" value={activeId} onChange={e => setSelectedId(e.target.value)} disabled={!files.length}>{files.length ? groups.map(g => <option key={g.id} value={g.id}>{g.id === 'composition' ? '跨文件组合波形' : g.id === 'merged' ? '合并波形' : g.files[0].filename}</option>) : <option value="">请先导入数据</option>}</select></div>
+        <Editor key={activeId} composition={mode === 'composition' ? composition : undefined} onComposition={setComposition} config={config} onChange={changeConfig} files={activeFiles} styles={styles} changeStyle={changeStyle} exporting={exporting} exportCurrent={format => { void exportFromPanel(format, false); }} exportAll={format => { void exportFromPanel(format, true); }} sync={syncFormat} />
       </aside>
     </div>
     {dragging && <div className="drag-overlay"><div><span>↓</span><h2>释放文件，自动生成曲线</h2><p>支持 TXT / CSV · 所有数据仅在浏览器处理</p></div></div>}
