@@ -152,3 +152,10 @@ h1 { margin: 6px 0; font-size: 24px; color: #1e3150; font-weight: 650; letter-sp
 .inspector { display: block; }
 @media (max-width: 1180px) { .workspace { grid-template-columns: 220px minmax(0,1fr); } .inspector { grid-column: 2; } .editor-content { max-height: none; } }
 @font-face { font-family: 'Noto Sans SC'; src: url('/fonts/NotoSansSC-Regular.ttf') format('truetype'); font-weight: 400; font-display: swap; }
+/* Cross-file composition editor uses the existing inspector width. */
+.source-file { border: 1px solid var(--border, #e2e8f0); border-radius: 8px; padding: 10px; margin: 10px 0; }
+.source-file summary { cursor: pointer; font-size: 12px; font-weight: 600; overflow-wrap: anywhere; }
+.source-file small { margin-left: auto; color: #64748b; }
+.assignment-plan { font-size: 12px; overflow-wrap: anywhere; padding-top: 12px; }
+.assignment-plan ul { padding-left: 20px; margin: 5px 0 12px; }
+.sidebar .segmented { flex-wrap: wrap; }

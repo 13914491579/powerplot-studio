@@ -1,19 +1,21 @@
+import { compositionTraces, type Composition } from './composition';
 import type { Layout, Axis, Annotations } from 'plotly.js';
 import type { Dataset } from './parser';
 import { curveKey, tracesFor, type Styles } from './model';
 import { dataExtent, inches, gridShape, xFor, type AxisConfig, type PlotConfig } from './config';
 const px = (pt: number) => pt * 96 / 72;
-export function buildFigure(files: Dataset[], styles: Styles, merged: boolean, config: PlotConfig, revision: number) {
+export function buildFigure(files: Dataset[], styles: Styles, merged: boolean, config: PlotConfig, revision: number, composition?: Composition) {
   const size = inches(config.size); const width = size.width * 96, height = size.height * 96;
-  const allRaw = tracesFor(files, styles, merged);
-  const allKeys = files.flatMap(f => f.signals.map((_, i) => curveKey(f.id, i)));
-  const active = allRaw.map((_, i) => i).filter(i => (styles[allKeys[i]]?.panel ?? 1) <= config.panels);
+  const instances = composition ? compositionTraces(files, composition).filter(t => t.panel <= config.panels) : undefined;
+  const allRaw = instances ? instances.map(t => t.trace) : tracesFor(files, styles, merged);
+  const allKeys = instances ? instances.map(t => t.key) : files.flatMap(f => f.signals.map((_, i) => curveKey(f.id, i)));
+  const active = allRaw.map((_, i) => i).filter(i => composition || (styles[allKeys[i]]?.panel ?? 1) <= config.panels);
   const raw = active.map(i => allRaw[i]);
   if (raw.some(t => !Number.isFinite(t.line.width) || t.line.width < .1 * 96 / 72 || t.line.width > 10 * 96 / 72)) throw new Error('曲线线宽需在 0.1–10 pt 之间。');
   const keys = active.map(i => allKeys[i]);
-  const panels = raw.map((_, i) => styles[keys[i]]?.panel ?? 1);
+  const panels = raw.map((_, i) => instances ? instances[i].panel : styles[keys[i]]?.panel ?? 1);
   const traces = raw.map((trace, i) => ({ ...trace, xaxis: panels[i] === 1 ? 'x' : `x${panels[i]}`, yaxis: panels[i] === 1 ? 'y' : `y${panels[i]}`, legend: config.legendMode === 'panel' ? (panels[i] === 1 ? 'legend' : `legend${panels[i]}`) : 'legend', showlegend: trace.showlegend && (config.legendMode === 'panel' ? config.panelOptions[panels[i] - 1].legend.show : config.legend.show) }));
-  const autoX = new Set(files.map(f => f.timeLabel)).size === 1 ? files[0].timeLabel : '时间（各文件原始单位）';
+  const autoX = new Set(files.map(f => f.timeLabel)).size === 1 ? (files[0]?.timeLabel ?? 'Time') : '时间（各文件原始单位）';
   function* allTime() { for (const file of files) yield* file.time; }
   const xExtent = dataExtent(allTime());
   const axisLayout = (a: AxisConfig, extent: [number, number], title: string): Partial<Axis> & { griddash: string; automargin: boolean; ticklabelstandoff: number } => {
@@ -39,13 +41,18 @@ export function buildFigure(files: Dataset[], styles: Styles, merged: boolean, c
   if (external && ['top', 'bottom'].includes(config.legend.position)) margin[config.legend.position === 'top' ? 't' : 'b'] += legendHeight + 8;
   if (external && ['left', 'right'].includes(config.legend.position)) margin[config.legend.position === 'left' ? 'l' : 'r'] += Math.max(...legendItems.map(t => textWidth(t.name))) + 8;
   const { rows, columns } = gridShape(config);
+  const legendCapacity = (width - margin.l - margin.r - px(config.spacing.horizontal + config.font.axis + config.font.tick * 4 + config.spacing.axisTitle + config.spacing.tick) * (columns - 1)) / columns;
+  const panelOrientation = (i: number) => { const p = config.panelOptions[i]; const length = traces.filter((t, j) => panels[j] === i + 1 && t.showlegend).reduce((sum, t) => sum + textWidth(t.name) * (p.legend.fontSize ?? config.font.legend) / config.font.legend, 0); return p.legend.orientation === 'h' && length <= legendCapacity ? 'h' : 'v'; };
   const panelLegendHeight = config.legendMode === 'panel' && config.legend.show ? Math.max(0, ...config.panelOptions.slice(0, config.panels).map((p, i) => {
     const items = traces.filter((t, j) => panels[j] === i + 1 && t.showlegend);
     if (!p.legend.show || !['top','bottom'].includes(p.legend.position)) return 0;
     const available = (width - margin.l - margin.r) / columns;
-    return (px(p.legend.fontSize ?? config.font.legend) + 5) * (p.legend.orientation === 'v' ? items.length : Math.max(1, Math.ceil(items.reduce((sum, t) => sum + textWidth(t.name), 0) / Math.max(70, available)))) + 8;
+    return (px(p.legend.fontSize ?? config.font.legend) + 5) * (panelOrientation(i) === 'v' ? items.length : Math.max(1, Math.ceil(items.reduce((sum, t) => sum + textWidth(t.name), 0) / Math.max(70, available)))) + 8;
   })) : 0;
-  if (panelLegendHeight) { margin.t += panelLegendHeight; margin.b += panelLegendHeight; }
+  const hasTopLegend = config.legendMode === 'panel' && config.panelOptions.slice(0, config.panels).some((p, i) => p.legend.show && p.legend.position === 'top' && traces.some((t, j) => panels[j] === i + 1 && t.showlegend));
+  const hasBottomLegend = config.legendMode === 'panel' && config.panelOptions.slice(0, config.panels).some((p, i) => p.legend.show && p.legend.position === 'bottom' && traces.some((t, j) => panels[j] === i + 1 && t.showlegend));
+  if (hasTopLegend) margin.t += panelLegendHeight;
+  if (hasBottomLegend) margin.b += panelLegendHeight;
   const sideLegendWidth = config.legendMode === 'panel' && config.legend.show ? Math.max(0, ...config.panelOptions.slice(0, config.panels).map((p, i) => p.legend.show && ['left','right'].includes(p.legend.position) ? Math.max(0, ...traces.filter((t, j) => panels[j] === i + 1 && t.showlegend).map(t => textWidth(t.name))) + 8 : 0)) : 0;
   if (sideLegendWidth) { margin.l += sideLegendWidth; margin.r += sideLegendWidth; }
   const legendPosition = {
@@ -57,7 +64,7 @@ export function buildFigure(files: Dataset[], styles: Styles, merged: boolean, c
     manual: { x: config.legend.x, y: config.legend.y, xanchor: 'left' as const, yanchor: 'top' as const },
   }[config.legend.position];
   const layout: Partial<Layout> & Record<string, unknown> = {
-    autosize: false, width, height, paper_bgcolor: '#ffffff', plot_bgcolor: '#ffffff', margin,
+    autosize: false, width, height, paper_bgcolor: '#ffffff', plot_bgcolor: '#ffffff', margin: Object.assign({}, margin, { autoexpand: config.legendMode !== 'panel' }),
     font: { family: config.font.family, color: config.font.color, size: px(config.font.tick) },
     title: { text: config.title, font: { size: px(config.font.title) }, x: .5, xanchor: 'center', y: .98 },
     showlegend: config.legend.show, legend: { ...legendPosition, orientation: config.legend.orientation, font: { size: px(config.font.legend) }, borderwidth: config.legend.border ? .7 : 0, bordercolor: config.font.color, bgcolor: `rgba(255,255,255,${config.legend.opacity})`, tracegroupgap: 3 },
@@ -68,7 +75,7 @@ export function buildFigure(files: Dataset[], styles: Styles, merged: boolean, c
   const availableWidth = width - margin.l - margin.r;
   const sync = config.sharedX ? config.xSync === 'independent' ? 'all' : config.xSync : 'independent';
   const hideX = config.hideRepeatedX && sync !== 'independent';
-  const gapY = px(config.spacing.vertical + (hideX ? 0 : config.font.tick + config.font.axis + config.spacing.axisTitle + config.spacing.tick)) + panelLegendHeight;
+  const gapY = px(config.spacing.vertical + (hideX ? 0 : config.font.tick + config.font.axis + config.spacing.axisTitle + config.spacing.tick)) + panelLegendHeight * (Number(hasTopLegend) + Number(hasBottomLegend));
   // Each internal column must reserve its own Y title and tick labels.
   const gapX = px(config.spacing.horizontal + config.font.axis + config.font.tick * 4 + config.spacing.axisTitle + config.spacing.tick) + sideLegendWidth;
   const cellWidth = (availableWidth - gapX * (columns - 1)) / columns;
@@ -79,14 +86,16 @@ export function buildFigure(files: Dataset[], styles: Styles, merged: boolean, c
     const n = i + 1; const suffix = i === 0 ? '' : String(n);
     function* values() { for (const [j, trace] of raw.entries()) if (panels[j] === n && trace.visible === true) yield* trace.y; }
     const names = raw.filter((_, j) => panels[j] === n);
-    const y = axisLayout(config.y[i], dataExtent(values(), true), names.length === 1 ? names[0].name : `信号值${config.panels > 1 ? ` ${n}` : ''}`);
+    const y = axisLayout(config.y[i], dataExtent(values(), true), names.length === 1 ? (composition ? names[0].name.split(' · ').slice(1).join(' · ') : names[0].name) : `信号值${config.panels > 1 ? ` ${n}` : ''}`);
     const row = Math.floor(i / columns), col = i % columns;
     const group = sync === 'all' ? 0 : sync === 'column' ? col : i;
     function* groupTime() { for (const [j, trace] of raw.entries()) if (sync === 'all' || (sync === 'column' ? (panels[j] - 1) % columns === col : panels[j] === n)) yield* trace.x; }
-    const x = axisLayout(xFor(config, group), raw.length ? dataExtent(groupTime()) : xExtent, autoX);
+    const panelTimeLabels = instances?.filter(t => t.panel === n).map(t => t.trace.meta.timeLabel);
+    const ownAutoX = panelTimeLabels?.length ? (new Set(panelTimeLabels).size === 1 ? panelTimeLabels[0] : 'Time') : autoX;
+    const x = axisLayout(xFor(config, group), raw.length ? dataExtent(groupTime()) : xExtent, ownAutoX);
     // Synchronizing ranges never implicitly hides titles or ticks.
     const independentStyle = xFor(config, i);
-    const ownX = axisLayout(independentStyle, xExtent, autoX);
+    const ownX = axisLayout(independentStyle, xExtent, ownAutoX);
     const xDomain: [number, number] = [col * (cellWidth + gapX) / availableWidth, (col * (cellWidth + gapX) + cellWidth) / availableWidth];
     const top = 1 - row * (cellHeight + gapY) / availableHeight;
     const yDomain: [number, number] = [Math.max(0, top - cellHeight / availableHeight), top];
@@ -107,7 +116,7 @@ export function buildFigure(files: Dataset[], styles: Styles, merged: boolean, c
         inside: { x: right, y: top, xanchor: 'right', yanchor: 'top' },
         manual: { x: left + l.x * (right - left), y: bottom + l.y * (top - bottom), xanchor: 'left', yanchor: 'top' },
       }[l.position];
-      layout[i === 0 ? 'legend' : `legend${n}`] = { ...positions, xref: 'paper', yref: 'paper', orientation: l.orientation, font: { size: px(l.fontSize ?? config.font.legend) }, borderwidth: l.border ? .7 : 0, bordercolor: config.font.color, bgcolor: `rgba(255,255,255,${l.opacity})`, tracegroupgap: 3 };
+      layout[i === 0 ? 'legend' : `legend${n}`] = { ...positions, xref: 'paper', yref: 'paper', orientation: panelOrientation(i), font: { size: px(l.fontSize ?? config.font.legend) }, borderwidth: l.border ? .7 : 0, bordercolor: config.font.color, bgcolor: `rgba(255,255,255,${l.opacity})`, tracegroupgap: 3 };
     }
   }
   layout.annotations = annotations;

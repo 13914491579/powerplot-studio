@@ -1,5 +1,5 @@
 export interface Signal { name: string; values: number[] }
-export interface ParsedData { time: number[]; timeLabel: string; signals: Signal[] }
+export interface ParsedData { time: number[]; timeLabel: string; signals: Signal[]; hasHeader?: boolean }
 export interface Dataset extends ParsedData { id: string; filename: string }
 const numeric = /^[+-]?(?:\d+\.?\d*|\.\d+)(?:[eE][+-]?\d+)?$/;
 const isNumber = (s: string) => numeric.test(s) && Number.isFinite(Number(s));
@@ -13,7 +13,7 @@ export function parseText(text: string): ParsedData {
   if (first.length < 2) throw new Error('至少需要两列：时间列和一个信号列。');
   const header = first.every(v => v.length > 0 && !isNumber(v)) && !isNumber(first[0]);
   if (!header && !first.every(isNumber)) throw new Error(`第 ${lines[0].line} 行包含无效数字或混合表头。`);
-  const result: ParsedData = { time: [], timeLabel: header ? first[0] : 'Time', signals: first.slice(1).map((name, i) => ({ name: header ? name : `Curve ${i + 1}`, values: [] })) };
+  const result: ParsedData = { hasHeader: header, time: [], timeLabel: header ? first[0] : 'Time', signals: first.slice(1).map((name, i) => ({ name: header ? name : `Curve ${i + 1}`, values: [] })) };
   for (const row of lines.slice(header ? 1 : 0)) {
     const cells = split(row.value);
     if (cells.length !== first.length) throw new Error(`第 ${row.line} 行列数不一致：应为 ${first.length} 列，实际 ${cells.length} 列。`);
