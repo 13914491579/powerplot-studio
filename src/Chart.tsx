@@ -1,3 +1,4 @@
+import { installLegend } from './legend';
 import { type Composition } from './composition';
 import { useEffect, useRef, useState } from 'react';
 import Plotly from 'plotly.js-basic-dist-min';
@@ -9,13 +10,13 @@ import { buildFigure } from './layout';
 import { downloadBlob, exportChart, uniqueNames, type Exporter, type Format } from './export';
 
 interface Props {
-  id: string; files: Dataset[]; styles: Styles; merged: boolean; config: PlotConfig; revision: number; composition?: Composition;
+  onConfig: (config: PlotConfig) => void; id: string; files: Dataset[]; styles: Styles; merged: boolean; config: PlotConfig; revision: number; composition?: Composition;
   selected: boolean; onSelect: () => void;
   register: (id: string, exporter: Exporter | null) => void;
   onVisibility: (key: string, visible: boolean) => void;
 }
 
-export default function Chart({ id, files, styles, merged, config, revision, onVisibility, selected, onSelect, register, composition }: Props) {
+export default function Chart({ id, files, styles, merged, config, revision, onVisibility, selected, onSelect, register, composition, onConfig }: Props) {
   const element = useRef<HTMLDivElement>(null);
   const queue = useRef<Promise<unknown>>(Promise.resolve());
   const alive = useRef(false);
@@ -59,11 +60,17 @@ export default function Chart({ id, files, styles, merged, config, revision, onV
       const { traces, emptyTraces, layout, keys, width, height } = buildFigure(files, styles, merged, config, revision, composition);
       keysRef.current = keys;
       if (config.font.family === 'Noto Sans SC') await document.fonts.load('16px "Noto Sans SC"');
+
       const gd = await Plotly.react(div, [...traces, ...emptyTraces], layout, {
         responsive: false, displaylogo: false, scrollZoom: true,
         modeBarButtonsToRemove: ['toImage', 'select2d', 'lasso2d'],
         doubleClick: 'reset',
         showTips: false,
+      });
+      const warning = installLegend(div, config, keys, (key, visible) => visibilityHandler.current(key, visible), (panel, key, x, y) => {
+        const l = panel < 0 ? config.legend : config.panelOptions[panel].legend;
+        if (!l.fine) return; const next = { ...l, fine: { ...l.fine, positions: { ...l.fine.positions, [key]: { x, y } } } };
+        onConfig(panel < 0 ? { ...config, legend: next } : { ...config, panelOptions: config.panelOptions.map((p,i) => i === panel ? { ...p, legend: next } : p) });
       });
       // Keep the curve controls and legend clicks in one state.
       gd.removeAllListeners('plotly_legendclick');
@@ -74,7 +81,7 @@ export default function Chart({ id, files, styles, merged, config, revision, onV
         return false;
       });
       gd.on('plotly_legenddoubleclick', () => false);
-      if (!cancelled && alive.current) { setGeometry({ width, height }); readyRef.current = true; setReady(true); setError(''); }
+      if (!cancelled && alive.current) { setGeometry({ width, height }); readyRef.current = true; setReady(true); setError(warning ?? ''); }
     }).catch(e => { if (!cancelled && alive.current) setError(`绘图失败：${e instanceof Error ? e.message : String(e)}`); });
     return () => { cancelled = true; };
   }, [styles, config, merged, files, revision, composition]);
