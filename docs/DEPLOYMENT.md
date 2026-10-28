@@ -95,3 +95,13 @@ Remove-Item Env:PLAYWRIGHT_BASE_URL
 - Cloudflare 正式部署 `b9b1f14f-7f10-454d-863d-582339e1e56b` 日志确认 `150c408` 构建、资产发布、站点部署均成功；正式入口 https://powerplot-studio.pages.dev 显示 2.2 COMPOSE。
 - 对正式网址运行七组 Edge 上线验收，退出码 0：六组首次通过，一组首页 ERR_TIMED_OUT 后重试通过。包含三文件按文件/按信号组合、不同采样间隔、同源多实例样式、同名文件、删除及模式隔离、容量提示、1×3/3×1/2×2 的 PNG/SVG/矢量 PDF/ZIP，以及刷新、严重错误和本地数据无上传检查。
 - 正式站点实际示例组合截图已检查，独立时间轴和编号正确。测试产物仅保留在忽略目录 `.qa/`。本条发布记录为文档更新，产品代码与已验收预览一致。
+
+## 2.3 正式发布（2026-10-28）
+
+- [PR #2](https://github.com/13914491579/powerplot-studio/pull/2) 已合并，功能发布提交 `586651ad737efb0fbe0a0697cd3e759d0188b7eb`；正式入口 https://powerplot-studio.pages.dev 显示 2.3 LEGEND。
+- 本地完整检查：57 项单元、30 组 Edge、TypeScript 和构建通过。增强的六组精细图例场景另行通过；原有全部 24 组浏览器场景保留。
+- 实际预览 https://ee50b0d6.powerplot-studio.pages.dev 七组公网验收首次通过；分支两次 GitHub CI 与 Cloudflare 检查均通过后合并。
+- 正式部署 `118a6eb3-f911-47f9-a5da-72c9aff8f53e` 成功，main CI 成功；正式站点七组验收全部首次通过，包括实际三个项目拖动、配置与显隐交互、四种多子图中文 SVG、PNG/PDF 以及本地处理隐私和刷新。
+- PDF 已用 Poppler 渲染检查手动图例位置；浏览器测试验证无图片对象、存在文字 BT 与矢量路径。Poppler 本机标准替代字体提示未影响本次标签显示。
+- Git HTTPS 连接持续重置，使用已授权 gh/GitHub Git API 上传：远程文件树 SHA 与本地功能提交逐一核对一致，保留 main 历史并通过 PR 合并，未强制推送。API 创建提交会重新生成提交 SHA：本地功能提交 1bcfcd5 对应远程 b4b3a68，内容一致。原先未推送的 2.2 发布补充记录也已包含在本次发布中。
+- 详见 LEGEND23.md 的操作说明与字号/字体/空间限制。测试截图和导出文件保留在忽略目录 .qa/。
