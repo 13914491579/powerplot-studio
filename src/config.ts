@@ -14,7 +14,7 @@ export interface PlotConfig {
   x: AxisConfig; y: AxisConfig[];
   font: { family: string; color: string; axis: number; tick: number; legend: number; title: number };
   title: string; margin: { l: number; r: number; t: number; b: number };
-  legend: { show: boolean; position: 'top' | 'bottom' | 'left' | 'right' | 'inside' | 'manual'; orientation: 'h' | 'v'; border: boolean; opacity: number; x: number; y: number; fontSize?: number };
+  legend: { fine?: { mode: 'auto' | 'manual'; horizontal: number; vertical: number; segment: number; textGap: number; wrap: boolean; maxColumns: number; align: 'left' | 'center' | 'right' | 'justify'; positions: Record<string, { x: number; y: number }> }; show: boolean; position: 'top' | 'bottom' | 'left' | 'right' | 'inside' | 'manual'; orientation: 'h' | 'v'; border: boolean; opacity: number; x: number; y: number; fontSize?: number };
   panels: 1 | 2 | 3 | 4; columns: 1 | 2 | 3 | 4; sharedX: boolean; lineWidth: number;
   xPanels: AxisConfig[]; xSync: 'all' | 'column' | 'independent'; hideRepeatedX: boolean;
   sizePolicy: 'recommended' | 'manual';
@@ -56,7 +56,7 @@ export function pixelSize(size: PlotConfig['size']) { const s = inches(size); re
 export function applyTemplate(config: PlotConfig, template: PlotConfig['template']): PlotConfig {
   if (template === 'custom') return { ...config, template, sizePolicy: 'manual' };
   const base = defaultConfig();
-  return { ...config, mode: 'paper', template, sizePolicy: 'manual', font: base.font, margin: base.margin, legend: base.legend, lineWidth: 1.5,
+  return { ...config, mode: 'paper', template, sizePolicy: 'manual', font: base.font, margin: base.margin, legend: { ...base.legend, fine: config.legend.fine }, lineWidth: 1.5,
     size: { ...config.size, unit: 'inch', width: template === 'single' ? 3.5 : 7.16, height: config.panels === 1 ? (template === 'single' ? 2.2 : 3.6) : recommendedSize(config).height },
     x: { ...config.x, lineWidth: .65, lineColor: '#64748b' }, y: config.y.map(a => ({ ...a, lineWidth: .65, lineColor: '#64748b' })) };
 }

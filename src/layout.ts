@@ -1,3 +1,4 @@
+import { arrange } from './legend';
 import { compositionTraces, type Composition } from './composition';
 import type { Layout, Axis, Annotations } from 'plotly.js';
 import type { Dataset } from './parser';
@@ -34,7 +35,8 @@ export function buildFigure(files: Dataset[], styles: Styles, merged: boolean, c
   const innerWidth = width - px(config.margin.l + config.margin.r);
   let legendRows = 1, used = 0;
   for (const trace of legendItems) { const item = Math.min(innerWidth, textWidth(trace.name)); if (used > 0 && used + item > innerWidth) { legendRows++; used = 0; } used += item; }
-  const legendHeight = config.legend.orientation === 'v' ? legendItems.length * (px(config.font.legend) + 5) : legendRows * (px(config.font.legend) + 5);
+  const fineHeight = (l: PlotConfig['legend'], items: typeof legendItems, available: number) => { const f=l.fine; if(!f)return 0; const font=px(l.fontSize??config.font.legend); const widths=items.map(t=>Array.from(t.name).reduce((sum,ch)=>sum+(ch.charCodeAt(0)>255?1:.6),0)*font+px(f.segment+f.textGap)+6); const p=arrange(widths,available,font+4,px(f.horizontal),px(f.vertical),l.orientation==='v'?1:f.maxColumns,f.wrap,f.align); return Math.max(0,...p.map(a=>a.y+font+4)); };
+  const legendHeight = config.legend.fine ? fineHeight(config.legend, legendItems, innerWidth) : config.legend.orientation === 'v' ? legendItems.length * (px(config.font.legend) + 5) : legendRows * (px(config.font.legend) + 5);
   const margin = Object.fromEntries(Object.entries(config.margin).map(([k, v]) => [k, px(v)])) as { l: number; r: number; t: number; b: number };
   if (config.title) margin.t += px(config.font.title) + 8;
   const external = config.legendMode === 'global' && config.legend.show && legendItems.length > 0;
@@ -47,6 +49,7 @@ export function buildFigure(files: Dataset[], styles: Styles, merged: boolean, c
     const items = traces.filter((t, j) => panels[j] === i + 1 && t.showlegend);
     if (!p.legend.show || !['top','bottom'].includes(p.legend.position)) return 0;
     const available = (width - margin.l - margin.r) / columns;
+    if(p.legend.fine)return fineHeight(p.legend,items,legendCapacity)+8;
     return (px(p.legend.fontSize ?? config.font.legend) + 5) * (panelOrientation(i) === 'v' ? items.length : Math.max(1, Math.ceil(items.reduce((sum, t) => sum + textWidth(t.name), 0) / Math.max(70, available)))) + 8;
   })) : 0;
   const hasTopLegend = config.legendMode === 'panel' && config.panelOptions.slice(0, config.panels).some((p, i) => p.legend.show && p.legend.position === 'top' && traces.some((t, j) => panels[j] === i + 1 && t.showlegend));

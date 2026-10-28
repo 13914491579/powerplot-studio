@@ -87,3 +87,11 @@ Remove-Item Env:PLAYWRIGHT_BASE_URL
 同源 Noto 字体约 10 MB，公网首次加载可能较慢；公网测试单独延长等待时间，不改变产品绘图逻辑或断言。本地回归仍保留原等待阈值。GitHub 尚未设置强制要求测试成功的分支保护。
 
 官方参考：[Git 集成](https://developers.cloudflare.com/pages/get-started/git-integration/)、[构建版本](https://developers.cloudflare.com/pages/configuration/build-image/)、[分支构建](https://developers.cloudflare.com/pages/configuration/branch-build-controls/)、[回退](https://developers.cloudflare.com/pages/configuration/rollbacks/)。
+
+## 2.2 正式发布补充记录（2026-10-10）
+
+- [PR #1](https://github.com/13914491579/powerplot-studio/pull/1) 已在最新分支三项检查通过后合并，正式功能提交为 `150c4087356bea197813fbcc3a0d73442d13ac71`；本地 main 已快进同步，无强制推送。
+- 最新分支提交 `9c7a115` 的 [GitHub CI](https://github.com/13914491579/powerplot-studio/actions/runs/38022001079) 成功。实际预览 [710ab0f2](https://710ab0f2.powerplot-studio.pages.dev) 验收七组场景：五组首次通过、一组连接中断重试通过、一组 3×1 首页连接中断失败后单独补验首次通过。未将网络失败隐瞒为首轮全绿。
+- Cloudflare 正式部署 `b9b1f14f-7f10-454d-863d-582339e1e56b` 日志确认 `150c408` 构建、资产发布、站点部署均成功；正式入口 https://powerplot-studio.pages.dev 显示 2.2 COMPOSE。
+- 对正式网址运行七组 Edge 上线验收，退出码 0：六组首次通过，一组首页 ERR_TIMED_OUT 后重试通过。包含三文件按文件/按信号组合、不同采样间隔、同源多实例样式、同名文件、删除及模式隔离、容量提示、1×3/3×1/2×2 的 PNG/SVG/矢量 PDF/ZIP，以及刷新、严重错误和本地数据无上传检查。
+- 正式站点实际示例组合截图已检查，独立时间轴和编号正确。测试产物仅保留在忽略目录 `.qa/`。本条发布记录为文档更新，产品代码与已验收预览一致。

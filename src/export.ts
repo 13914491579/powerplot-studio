@@ -30,6 +30,7 @@ async function pdfFont() {
 }
 export async function exportChart(gd: PlotlyHTMLElement, config: PlotConfig, format: Format): Promise<Blob> {
   const errors = validateConfig(config); if (errors.length) throw new Error(errors.join(' '));
+  const legendLayer = gd.querySelector('.fine-legend')?.cloneNode(true);
   // Capture the displayed ranges before any asynchronous font/PDF work.
   const layout = structuredClone(gd.layout);
   const data = gd.data.map(trace => ({ ...trace }));
@@ -44,6 +45,8 @@ export async function exportChart(gd: PlotlyHTMLElement, config: PlotConfig, for
     svgText = await (await fetch(dataUrl)).text();
   } finally { Plotly.purge(render); render.remove(); }
   const physicalSvg = new DOMParser().parseFromString(svgText, 'image/svg+xml').documentElement;
+  physicalSvg.querySelectorAll('g').forEach(g => { const cl=g.getAttribute('class')??''; if (/^legend[0-9]*$/.test(cl)) { const n=cl==='legend'?0:Number(cl.slice(6))-1; if(config.legendMode==='global'?config.legend.fine:config.panelOptions[n]?.legend.fine) g.remove(); } });
+  if (legendLayer) physicalSvg.append(legendLayer);
   physicalSvg.setAttribute('viewBox', `0 0 ${size.width * 96} ${size.height * 96}`);
   physicalSvg.setAttribute('width', `${size.width}in`); physicalSvg.setAttribute('height', `${size.height}in`);
   if (config.font.family === 'Noto Sans SC') {
