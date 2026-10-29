@@ -1,4 +1,4 @@
-# PowerPlot Studio 2.4
+# PowerPlot Studio 2.5
 
 面向电力系统仿真的浏览器本地科研波形编辑器。在第一阶段项目上迭代，保留原始解析器、文件导入、分别 / 合并绘图与默认红黄蓝配色，新增 IEEE 尺寸模板、自由编辑、多子图、物理尺寸导出、矢量 PDF、批量 ZIP 与样式同步。项目保存和大数据降采样仍属第三阶段。
 
@@ -144,4 +144,7 @@ React、Plotly.js、Vite、Tailwind CSS、Vitest、jsPDF、svg2pdf.js 为 MIT �
 
 
 2.4 新增独立 [三维科研绘图](docs/THREED24.md)：原始采样瀑布图、严格时间轴校验的轨迹图、相机与高清 PNG；全部二维功能保留。
+
+
+2.5：[三维页面与排版说明](docs/LAYOUT25.md)，新增标准科研视角、固定下载入口、精细 SVG 图例及 PNG 显式合成。
 
