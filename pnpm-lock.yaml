@@ -17,6 +17,9 @@ importers:
       plotly.js-basic-dist-min:
         specifier: ^3.1.0
         version: 3.7.0
+      plotly.js-gl3d-dist-min:
+        specifier: 3.7.0
+        version: 3.7.0
       react:
         specifier: ^19.2.0
         version: 19.3.0
@@ -956,6 +959,9 @@ packages:
 
   plotly.js-basic-dist-min@3.7.0:
     resolution: {integrity: sha512-84KPQhLTrO5IHu6DCte2KwA4bzSoVIdIs3uDPWid3sgeTX8L5RjpDARjCG3spgOwQ8MYE8PL+MeQ0DQRWA1Emw==}
+
+  plotly.js-gl3d-dist-min@3.7.0:
+    resolution: {integrity: sha512-44QPf8B49X/AkSyfSJValsOAUNTjXXKmRwwBhFiKN9fNQIAjQ1BsS1FILpXExD/vUpCcCseRaFVVrx1UR2ckxw==}
 
   postcss@8.5.29:
     resolution: {integrity: sha512-49cGhUbXj8Qenv0iTMxA1cFBzxXoctpC9Ujd77t1WcbJIr6nF/eI7g/8MgxrYldFRuAXvja7xQRwavoW7kgrxQ==}
@@ -1921,6 +1927,8 @@ snapshots:
       playwright-core: 1.64.0
 
   plotly.js-basic-dist-min@3.7.0: {}
+
+  plotly.js-gl3d-dist-min@3.7.0: {}
 
   postcss@8.5.29:
     dependencies:

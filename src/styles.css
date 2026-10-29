@@ -159,3 +159,6 @@ h1 { margin: 6px 0; font-size: 24px; color: #1e3150; font-weight: 650; letter-sp
 .assignment-plan { font-size: 12px; overflow-wrap: anywhere; padding-top: 12px; }
 .assignment-plan ul { padding-left: 20px; margin: 5px 0 12px; }
 .sidebar .segmented { flex-wrap: wrap; }
+
+[hidden] { display: none !important; }
+

@@ -1,4 +1,4 @@
-# PowerPlot Studio 2.3
+# PowerPlot Studio 2.4
 
 面向电力系统仿真的浏览器本地科研波形编辑器。在第一阶段项目上迭代，保留原始解析器、文件导入、分别 / 合并绘图与默认红黄蓝配色，新增 IEEE 尺寸模板、自由编辑、多子图、物理尺寸导出、矢量 PDF、批量 ZIP 与样式同步。项目保存和大数据降采样仍属第三阶段。
 
@@ -141,4 +141,7 @@ Vite 会提示 Plotly 绘图模块大于 500 kB；它已从首屏主包分离并
 React、Plotly.js、Vite、Tailwind CSS、Vitest、jsPDF、svg2pdf.js 为 MIT 许可；JSZip 使用 MIT / GPLv3 双许可，本项目按 MIT 使用；TypeScript 和 Playwright 为 Apache-2.0，Noto 字体为 SIL OFL 1.1。发布时保留相应依赖许可，可通过各包内的 LICENSE 查看完整条款。项目自身许可证尚未选定，公开可读不代表已授予开源许可；本项目未新增 LICENSE。
 
 2.3 新增 [精细图例排版](docs/LEGEND23.md)：SVG 自动分布、单项拖动及精确定位，兼容旧图例与统一矢量导出。
+
+
+2.4 新增独立 [三维科研绘图](docs/THREED24.md)：原始采样瀑布图、严格时间轴校验的轨迹图、相机与高清 PNG；全部二维功能保留。
 
