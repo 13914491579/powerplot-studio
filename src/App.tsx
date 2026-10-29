@@ -119,13 +119,13 @@ export default function App() {
 
   return <div className="app-shell" onDragOver={e => { e.preventDefault(); if (e.dataTransfer.types.includes('Files')) setDragging(true); }} onDragLeave={e => { if (!e.currentTarget.contains(e.relatedTarget as Node)) setDragging(false); }} onDrop={e => { e.preventDefault(); setDragging(false); void loadFiles(Array.from(e.dataTransfer.files)); }}>
     <header className="topbar">
-      <a className="brand" href="./"><span className="brand-icon"><Logo /></span><span>PowerPlot <strong>Studio</strong><small>电力仿真 · 科研波形</small></span><span className="version">2.4 3D</span></a>
+      <a className="brand" href="./"><span className="brand-icon"><Logo /></span><span>PowerPlot <strong>Studio</strong><small>电力仿真 · 科研波形</small></span><span className="version">2.5 3D</span></a>
       <div className="top-actions"><span className="local-badge"><span />数据仅在本地处理</span><button className="button primary" onClick={() => input.current?.click()} disabled={busy}><span>＋</span> 导入数据</button></div>
       <input ref={input} type="file" multiple accept=".txt,.csv" className="sr-only" aria-label="导入 TXT 或 CSV 文件" onChange={e => { void loadFiles(Array.from(e.target.files || [])); e.target.value = ''; }} />
     </header>
 
     <div className="workspace">
-      <aside className="sidebar">
+      <aside className={dimension === '3d' ? 'sidebar sidebar-three-d' : 'sidebar'}>
         <section className="panel-section"><div className="section-heading"><h2>数据文件</h2><span className="count">{files.length}</span></div>
           <button className="dropzone" disabled={busy} onClick={() => input.current?.click()}><span className="upload-icon">↑</span><strong>{busy ? '正在解析数据…' : '拖入文件，开始绘图'}</strong><span>TXT / CSV · 支持多个文件</span></button>
           {files.length > 0 ? <ul className="file-list">{files.map(file => <li key={file.id}><span className="file-icon">TXT</span><div><strong title={file.filename}>{file.filename}</strong><small>{file.time.length.toLocaleString()} 个采样点 · {file.signals.length} 条曲线</small><small title={file.timeLabel}>{ranges[file.id]}</small></div><button className="remove-file" onClick={() => removeFile(file.id)} aria-label={`移除 ${file.filename}`} title="移除文件">×</button></li>)}</ul> : <p className="muted compact">支持逗号、Tab、空格分隔的数据。</p>}
@@ -142,13 +142,13 @@ export default function App() {
         <div className="sidebar-note"><span className="note-icon">◎</span><p>原始数据完整保留<br/><span>不插值，不滤波，不平滑</span></p></div>
       </aside>
 
-      <main className="preview-pane"><div className="segmented"><button aria-pressed={dimension === '2d'} onClick={()=>setDimension('2d')}>2D 绘图</button><button aria-pressed={dimension === '3d'} onClick={()=>{setOpened3D(true);setDimension('3d');}}>3D 绘图</button></div>{opened3D && <Suspense fallback={<p>加载 3D 引擎…</p>}><ThreeD files={files} active={dimension === '3d'}/></Suspense>}<div hidden={dimension === '3d'}>
+      <main className="preview-pane" style={dimension==='3d'?{gridColumn:'2 / 4'}:undefined}><div className="segmented"><button aria-pressed={dimension === '2d'} onClick={()=>setDimension('2d')}>2D 绘图</button><button aria-pressed={dimension === '3d'} onClick={()=>{setOpened3D(true);setDimension('3d');}}>3D 绘图</button></div>{opened3D && <Suspense fallback={<p>加载 3D 引擎…</p>}><ThreeD files={files} active={dimension === '3d'}/></Suspense>}<div hidden={dimension === '3d'}>
         <div className="workspace-title"><div><span className="eyebrow">WAVEFORM WORKSPACE</span><h1>波形工作区</h1><p>从仿真数据到清晰曲线。</p></div><button className="button secondary" onClick={loadExamples} disabled={busy}>加载示例数据</button></div>
         <div className="summary-bar"><span><b>{merged && files.length ? 1 : files.length}</b> 张图表</span><span><b>{totalCurves}</b> 条曲线</span><span><b>{totalPoints.toLocaleString()}</b> 个时间采样点</span><span className="summary-end">{mode === 'composition' ? '组合视图' : merged ? '合并视图' : '独立视图'}</span></div>
         {status && <div className="status-line" role="status">{busy && <span className="spinner" />}{status}</div>}
         {errors.length > 0 && <div className="error-box" role="alert"><strong>操作未完成</strong>{errors.map((error, i) => <p key={i}>{error}</p>)}<button onClick={() => setErrors([])}>关闭提示</button></div>}
         {!files.length ? <div className="empty-state"><div className="empty-plot"><svg viewBox="0 0 280 100" aria-hidden="true"><path className="mini-grid" d="M0 25h280M0 50h280M0 75h280M40 0v100M90 0v100M140 0v100M190 0v100M240 0v100"/><path className="mini-wave" d="M0 60h55l8-12 7 30 8-61 9 69 10-49 10 21 12-9 13 5 18-3h120"/></svg></div><h2>让仿真数据成为清晰的波形</h2><p>拖入 TXT / CSV 文件，自动识别时间与信号列。<br/>多曲线、多文件，一次导入即可查看。</p><button className="button primary" onClick={() => input.current?.click()} disabled={busy}>＋ 选择数据文件</button><button className="text-button" onClick={loadExamples} disabled={busy}>先体验示例数据 →</button><div className="empty-features"><span>原始时间轴</span><span>交互缩放</span><span>PNG / SVG 导出</span></div></div> : <Suspense fallback={<p className="status-line" role="status">正在加载绘图引擎…</p>}><div className="chart-list">{groups.map(group => <Chart onConfig={next => setConfigs(old => ({ ...old, [group.id]: next }))} key={group.id} id={group.id} files={group.files} styles={styles} merged={merged} composition={mode === 'composition' ? composition : undefined} config={configs[group.id] ?? emptyConfig.current} revision={revision} selected={activeId === group.id} onSelect={() => setSelectedId(group.id)} register={register} onVisibility={(key, visible) => mode === 'composition' ? setComposition(old => ({ ...old, styles: { ...old.styles, [key]: { ...old.styles[key], visible } } })) : changeStyle(key, { visible })} />)}</div></Suspense>}
-        <footer className="workspace-footer">PowerPlot Studio · 面向电力系统仿真与科研绘图<span>2.4 / 二维与三维科研绘图</span></footer>
+        <footer className="workspace-footer">PowerPlot Studio · 面向电力系统仿真与科研绘图<span>2.5 / 三维科研排版</span></footer>
       </div></main>
 
       <aside className="inspector" hidden={dimension === '3d'}>
@@ -159,5 +159,7 @@ export default function App() {
     {dragging && <div className="drag-overlay"><div><span>↓</span><h2>释放文件，自动生成曲线</h2><p>支持 TXT / CSV · 所有数据仅在浏览器处理</p></div></div>}
   </div>;
 }
+
+
 
 

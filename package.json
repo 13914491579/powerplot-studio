@@ -1,6 +1,6 @@
 {
   "name": "powerplot-studio",
-  "version": "2.4.0",
+  "version": "2.5.0",
   "private": true,
   "type": "module",
   "packageManager": "pnpm@11.25.0",
@@ -38,4 +38,5 @@
     "vitest": "^3.2.0"
   }
 }
+
 
