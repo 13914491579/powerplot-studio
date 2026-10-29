@@ -113,3 +113,13 @@ Remove-Item Env:PLAYWRIGHT_BASE_URL
 主功能提交 5ad392b，相机修复提交 5690dcf，最终功能合并 d51af126b564d11017886120fefd93fdc706ff06。Git HTTPS 网络连接重置，采用已有 gh 授权的 Git API 提交增量文件并通过 PR 合并，无强制推送或改写 main。三维 PNG 实测 300/600 DPI；原有二维 PNG/SVG/矢量 PDF/ZIP 回归通过。三维 SVG/PDF 首版不提供，避免将 WebGL 栅格绘图区误称矢量；百万点、不同显卡尚未压力认证。
 
 正式站点 https://powerplot-studio.pages.dev 的四组上线验收全部首次通过（20.7s）；最终功能部署 bd6ffa63-6444-4e4b-aba6-49006a30de5f 成功，main CI 成功。验证包含三维交互/导出、时间轴拒绝、二维返回及本地处理隐私/刷新。
+
+## 2.5 发布（2026-10-29）
+
+PR #5 已合并，功能合并提交 `189611f238b73b4f699c345c9e44b5e492162cee`。开发分支 feature/three-d-layout-2.5，远程功能提交 5517a6b / 3bc5e25（本地 f4046e5 / dec32d8 / 7ad29b1；通过已授权 Git API 创建增量提交，保留 main 历史，无强制推送）。
+
+完整本地 pnpm.cmd check：59 项单元、36 组 Edge、TypeScript 与 Vite 构建全部通过。原 33 组二维/三维浏览器场景保留。实际 WebGL 矩阵投影验证 X 正方向从左到右，原时间数组不变；验证单项图例拖动、相机与图例状态隔离、PNG 像素中有图例线段及自定义 400 DPI/1.5 倍预览不改变物理像素尺寸。
+
+预览 https://f4cde476.powerplot-studio.pages.dev 七组验收全部首次通过；分支两次 CI 和 Cloudflare 检查成功后合并。正式部署 72679e07-0465-48d6-a461-2fa6ad87509c 成功，main CI 成功。正式 https://powerplot-studio.pages.dev 七组上线验收全部首次通过（40.5s），含真实 PSCAD、投影方向、图例/相机/PNG、轨迹时间校验及隐私刷新。
+
+默认视角最终调整为 (1.6,-1.6,1.2)，为轴标签保留空间，实际 PNG 已查看；截图/导出产物保留在忽略目录 .qa/production25。使用说明与限制见 LAYOUT25.md。3D 仍只提供 PNG，二维 PNG/SVG/矢量 PDF/ZIP 均保持。
