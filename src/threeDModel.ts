@@ -1,0 +1,6 @@
+import type { Dataset } from './parser';
+import { sourcesFor } from './composition';
+export type Item3D={key:string;name:string;color:string;width:number;visible:boolean;legend:boolean;coordinate:number;label:string};
+export function waterfall(files:Dataset[],items:Item3D[],auto:boolean,start:number,step:number){const sources=sourcesFor(files);return items.flatMap((item,i)=>{const s=sources.find(s=>s.key===item.key);if(!s)return [];const y=auto?start+i*step:item.coordinate;if(!Number.isFinite(y))throw Error('工况坐标必须为有限数值');return [{type:'scatter3d' as const,mode:'lines' as const,x:s.file.time,y:Array(s.file.time.length).fill(y) as number[],z:s.signal.values,name:item.name,uid:item.key.replace(/[^a-zA-Z0-9]/g,'_'),visible:item.visible?true as const:'legendonly' as const,showlegend:item.legend,line:{color:item.color,width:item.width}}];});}
+export function trajectory(files:Dataset[],keys:string[]){const sources=sourcesFor(files);const selected=keys.map(key=>sources.find(s=>s.key===key));if(selected.some(s=>!s))throw Error('请选择 X/Y/Z 三个数据源');const [x,y,z]=selected.map(s=>s!);if([y,z].some(s=>s.file.timeLabel!==x.file.timeLabel||s.file.time.length!==x.file.time.length||s.file.time.some((t,i)=>t!==x.file.time[i])))throw Error('轨迹时间轴不一致（含单位）：暂不提供插值对齐，禁止按索引拼接');return {x:x.signal.values,y:y.signal.values,z:z.signal.values};}
+
